@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>이치방시세</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0b;
+    --panel:#141416;
+    --panel2:#1c1c20;
+    --line:#26262b;
+    --ink:#f7f7f8;
+    --muted:#8a8a92;
+    --red:#ff2e43;        /* 포인트 레드 */
+    --redsoft:#ff5c6c;
+    --up:#ff2e43;          /* 상승=빨강 (한국 거래소 관습) */
+    --down:#2e8fff;        /* 하락=파랑 */
+    --gold:#ffffff;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',sans-serif;overflow:hidden}
+  .app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative}
+
+  /* HEADER */
+  header{padding:16px 16px 0;flex-shrink:0;border-bottom:1px solid var(--line);background:var(--bg)}
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+  .logo{width:34px;height:34px;border-radius:9px;background:var(--red);display:grid;place-items:center;
+    font-family:'Black Han Sans';font-size:18px;color:#fff;flex-shrink:0}
+  .brand h1{font-family:'Black Han Sans';font-size:21px;letter-spacing:.5px}
+  .brand .sub{font-size:10px;color:var(--muted);letter-spacing:3px;margin-top:2px}
+  .loginbtn{margin-left:auto;background:#fee500;color:#3c1e1e;border:none;padding:7px 13px;border-radius:9px;
+    font-weight:700;font-size:12px;cursor:pointer;font-family:'Noto Sans KR'}
+
+  .searchwrap{position:relative;margin-bottom:12px}
+  .searchwrap input{width:100%;padding:11px 14px 11px 38px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-size:14px;font-family:'Noto Sans KR'}
+  .searchwrap input::placeholder{color:var(--muted)}
+  .searchwrap .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.5;font-size:14px}
+
+  .ctrlrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  /* 통화 토글 */
+  .curr{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .curr button{background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;
+    padding:7px 12px;cursor:pointer;font-family:'Noto Sans KR'}
+  .curr button.on{background:var(--red);color:#fff}
+  .sortsel{margin-left:auto;display:flex;gap:6px}
+  .sortsel button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11.5px;
+    padding:7px 11px;border-radius:8px;cursor:pointer;font-family:'Noto Sans KR';white-space:nowrap}
+  .sortsel button.on{color:var(--ink);border-color:var(--muted)}
+
+  .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:11px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex-shrink:0;padding:6px 13px;border-radius:999px;border:1px solid var(--line);background:var(--panel);
+    color:var(--muted);font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .chip.on{background:#fff;color:#0a0a0b;border-color:#fff;font-weight:700}
+
+  /* LIST HEADER (업비트 컬럼헤더) */
+  .lhead{display:grid;grid-template-columns:1fr 96px 64px 52px;gap:6px;padding:9px 16px;
+    font-size:11px;color:var(--muted);border-bottom:1px solid var(--line);flex-shrink:0;background:var(--bg)}
+  .lhead .r{text-align:right}
+  .lhead .c{text-align:center}
+
+  main{flex:1;overflow-y:auto;padding-bottom:80px;scrollbar-width:none}
+  main::-webkit-scrollbar{display:none}
+  .view{display:none}
+  .view.on{display:block}
+
+  /* ROW (거래소 리스트 한 줄) */
+  .row{display:grid;grid-template-columns:1fr 96px 64px 52px;gap:6px;align-items:center;
+    padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .row:active{background:var(--panel)}
+  .rname{display:flex;align-items:center;gap:9px;min-width:0}
+  .rthumb{width:36px;height:36px;border-radius:8px;background:var(--panel2);display:grid;place-items:center;
+    font-size:19px;flex-shrink:0;position:relative;border:1px solid var(--line)}
+  .rrank{position:absolute;bottom:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;
+    font-weight:700;padding:1px 4px;border-radius:4px;font-family:'Noto Sans KR'}
+  .rrank.last{background:#fff;color:#0a0a0b}
+  .rtitle{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rseries{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rprice{text-align:right}
+  .rprice .pv{font-family:'Bebas Neue';font-size:16px;letter-spacing:.4px}
+  .rprice .pu{font-size:9px;color:var(--muted)}
+  .rchg{text-align:right;font-size:12.5px;font-weight:700;font-family:'Bebas Neue';letter-spacing:.3px}
+  .rchg.up{color:var(--up)}.rchg.down{color:var(--down)}.rchg.flat{color:var(--muted)}
+  .rlike{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .rlike button{background:none;border:none;cursor:pointer;font-size:17px;line-height:1;padding:2px}
+  .rlike .lc{font-size:10px;color:var(--muted)}
+  .rlike button.on{animation:pop .3s}
+  @keyframes pop{50%{transform:scale(1.4)}}
+
+  /* MAP */
+  .secttl{font-family:'Black Han Sans';font-size:16px;margin:16px 16px 12px;display:flex;align-items:center;gap:8px}
+  .secttl .badge{font-size:11px;background:var(--red);color:#fff;padding:2px 8px;border-radius:6px;font-family:'Noto Sans KR'}
+  .mapwrap{margin:0 16px}
+  .map{height:280px;border-radius:var(--radius);border:1px solid var(--line);position:relative;overflow:hidden;
+    background:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px) 0 0/28px 28px,var(--panel)}
+  .pin{position:absolute;transform:translate(-50%,-100%);text-align:center;cursor:pointer}
+  .pin .dot{font-size:26px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}
+  .pin .lbl{background:var(--panel2);border:1px solid var(--line);font-size:10px;padding:2px 6px;border-radius:5px;
+    margin-top:-6px;display:inline-block;white-space:nowrap}
+  .maphint{position:absolute;bottom:10px;left:10px;right:10px;font-size:10.5px;color:var(--muted);
+    background:rgba(0,0,0,.55);padding:7px 10px;border-radius:7px}
+  .shoplist{margin:14px 16px 0;display:flex;flex-direction:column;gap:9px}
+  .shop{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 13px;display:flex;gap:11px;align-items:center}
+  .shop .emoji{font-size:23px}
+  .shop .info{flex:1}.shop .name{font-weight:700;font-size:13.5px}.shop .addr{font-size:11px;color:var(--muted);margin-top:2px}
+  .shop .tag{font-size:10px;padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--redsoft)}
+
+  /* SHELF */
+  .summary{margin:0 16px;background:linear-gradient(135deg,#1a0e10,#141416);border:1px solid var(--line);
+    border-radius:var(--radius);padding:20px;text-align:center;position:relative;overflow:hidden}
+  .summary:before{content:"💎";position:absolute;font-size:110px;opacity:.05;right:-10px;top:-16px}
+  .summary .label{font-size:11px;color:var(--muted);letter-spacing:2px}
+  .summary .total{font-family:'Bebas Neue';font-size:44px;color:#fff;margin-top:4px;line-height:1.1}
+  .summary .count{font-size:12px;color:var(--muted);margin-top:6px}
+  .colgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:14px 16px 0}
+  .empty{grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--muted)}
+  .emptyico{font-size:60px;opacity:.4;margin-bottom:14px}
+  .emptytitle{font-family:'Black Han Sans';font-size:18px;color:var(--ink);margin-bottom:8px}
+  .emptydesc{font-size:13px;line-height:1.6;margin-bottom:20px}
+  .emptybtn{background:var(--red);color:#fff;border:none;padding:11px 22px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR'}
+  .ccard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .ccard .ce{font-size:30px}.ccard .ct{font-size:12.5px;font-weight:500;margin-top:6px}
+  .ccard .cv{font-size:11px;color:var(--muted);margin-top:3px}
+  .ccard .cv b{color:#fff}
+  .qbtn{display:flex;justify-content:space-between;align-items:center;margin-top:9px}
+  .qbtn span.l{font-size:11px;color:var(--muted)}
+  .qbtn .grp{display:flex;gap:7px;align-items:center}
+  .qbtn button{width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:15px;cursor:pointer}
+  .qbtn .n{font-family:'Bebas Neue';font-size:17px;min-width:16px;text-align:center}
+
+  /* ADMIN */
+  .ac{margin:0 16px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px}
+  .ac h3{font-family:'Black Han Sans';font-size:15px;margin-bottom:4px}
+  .ac p{font-size:12px;color:var(--muted);line-height:1.6}
+  .field{margin-top:11px}
+  .field label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px}
+  .field input,.field select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);font-size:13.5px;font-family:'Noto Sans KR'}
+  .frow{display:flex;gap:9px}.frow .field{flex:1}
+  .addbtn{width:100%;margin-top:14px;padding:12px;border:none;border-radius:11px;background:var(--red);color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;font-family:'Noto Sans KR'}
+  .note{font-size:11.5px;color:var(--muted);background:var(--panel2);border:1px dashed var(--line);border-radius:11px;padding:12px;margin:0 16px;line-height:1.6}
+  .histrow{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .histrow input{flex:1}
+  .histtag{font-size:11px;color:var(--muted);margin-top:10px}
+  .histlist{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+  .histitem{display:flex;justify-content:space-between;font-size:12px;background:var(--panel2);padding:7px 11px;border-radius:8px}
+  .histitem .x{color:var(--red);cursor:pointer;font-weight:700}
+
+  /* NAV */
+  nav{position:absolute;bottom:0;left:0;right:0;display:flex;background:rgba(10,10,11,.96);
+    backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:7px 4px calc(7px + env(safe-area-inset-bottom))}
+  nav button{flex:1;background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;font-family:'Noto Sans KR';padding:4px 0}
+  nav button .ni{font-size:20px}
+  nav button.on{color:var(--red)}
+
+  /* MODAL */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;z-index:50;max-width:430px;margin:0 auto}
+  .modal.on{display:flex}
+  .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;animation:slideup .28s}
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+  .grab{width:38px;height:4px;background:var(--line);border-radius:2px;margin:6px auto 14px}
+  .dhead{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .dthumb{width:52px;height:52px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:28px}
+  .dtitle{font-family:'Black Han Sans';font-size:19px;line-height:1.15}
+  .dseries{color:var(--muted);font-size:12px;margin-top:3px}
+  .dprice{display:flex;align-items:baseline;gap:10px;margin-top:14px}
+  .dprice .big{font-family:'Bebas Neue';font-size:38px;letter-spacing:.5px}
+  .dprice .chg{font-size:14px;font-weight:700}
+  .chartcard{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:14px 12px 10px;margin-top:14px}
+  .chartlab{font-size:11px;color:var(--muted);margin-bottom:6px}
+  .chartfoot{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
+  .pricebox{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:14px}
+  .pbox{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center}
+  .pbox .fl{font-size:10.5px;color:var(--muted)}
+  .pbox .vl{font-family:'Bebas Neue';font-size:18px;margin-top:3px}
+  .selltl{font-family:'Black Han Sans';font-size:14px;margin:18px 0 9px}
+  .up2{color:var(--up)}.down2{color:var(--down)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">시</div>
+      <div><h1>이치방시세</h1><div class="sub">ICHIBAN PRICE</div></div>
+      <button class="loginbtn" onclick="flash('실제: 카카오/네이버 로그인 (Supabase Auth)')">💬 로그인</button>
+    </div>
+    <div class="searchwrap" id="searchwrap">
+      <span class="ico">🔍</span>
+      <input id="q" placeholder="피규어·시리즈 검색" oninput="render()">
+    </div>
+    <div class="ctrlrow" id="ctrlrow">
+      <div class="curr">
+        <button class="on" data-c="kr" onclick="setCurr(this)">KRW</button>
+        <button data-c="jp" onclick="setCurr(this)">JPY</button>
+        <button data-c="us" onclick="setCurr(this)">USD</button>
+      </div>
+      <div class="sortsel">
+        <button class="on" data-s="likes" onclick="setSort(this)">좋아요순</button>
+        <button data-s="newest" onclick="setSort(this)">최신</button>
+        <button data-s="change" onclick="setSort(this)">변동</button>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="lhead" id="lhead">
+    <span>피규어</span><span class="r">현재가</span><span class="r">전주대비</span><span class="c">♥</span>
+  </div>
+
+  <main>
+    <section class="view on" id="browse"><div id="list"></div></section>
+
+    <section class="view" id="map">
+      <div class="secttl">📍 입수처 찾기</div>
+      <div class="mapwrap"><div class="map" id="mapcanvas"></div></div>
+      <div class="shoplist" id="shoplist"></div>
+    </section>
+
+    <section class="view" id="shelf">
+      <div class="secttl">💎 내 장식장</div>
+      <div class="summary">
+        <div class="label">예상 총 자산 (현재 통화 기준)</div>
+        <div class="total" id="shelfTotal">0</div>
+        <div class="count" id="shelfCount">보유 0종 · 0개</div>
+      </div>
+      <div class="colgrid" id="colgrid"></div>
+    </section>
+
+    <section class="view" id="admin">
+      <div class="secttl">⚙️ 관리자 — 품목 등록</div>
+      <div class="ac">
+        <h3>새 피규어 추가</h3>
+        <p>등록하면 리스트에 바로 나타나요. (데모: 이 화면 세션에만 반영)</p>
+        <div class="field"><label>제목</label><input id="a_title" placeholder="치소 카프카 라스트원"></div>
+        <div class="frow">
+          <div class="field"><label>시리즈</label><input id="a_series" placeholder="체인소맨"></div>
+          <div class="field"><label>등급</label><select id="a_rank"><option>A상</option><option>B상</option><option>C상</option><option>D상</option><option>라스트원</option></select></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>현재 한국가 ₩</label><input id="a_kr" type="number" placeholder="142000"></div>
+          <div class="field"><label>일본가 ¥</label><input id="a_jp" type="number" placeholder="16800"></div>
+          <div class="field"><label>이치방쇼 $</label><input id="a_us" type="number" placeholder="118"></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>발매일</label><input id="a_rel" type="date"></div>
+          <div class="field"><label>이모지</label><input id="a_emoji" placeholder="🪓" value="🎁"></div>
+        </div>
+        <button class="addbtn" onclick="addItem()">＋ 목록에 추가</button>
+      </div>
+
+      <div class="ac">
+        <h3>📈 주별 시세 입력 → 그래프</h3>
+        <p>품목을 고르고, "언제 얼마였다"를 입력하면 그대로 그래프에 그려져요. 매주 한 줄씩 추가하면 됩니다.</p>
+        <div class="field"><label>품목 선택</label><select id="h_item" onchange="renderHistEditor()"></select></div>
+        <div class="histrow">
+          <input id="h_date" type="date">
+          <input id="h_price" type="number" placeholder="가격(₩)">
+          <button class="addbtn" style="width:auto;margin-top:0;padding:10px 16px" onclick="addHist()">추가</button>
+        </div>
+        <div class="histtag">입력된 시세 (오래된 순):</div>
+        <div class="histlist" id="histlist"></div>
+      </div>
+      <div class="note">💡 실제 서비스에선 이 입력들이 Supabase 표에 저장돼요. CSV(날짜,가격)를 업로드하면 그래프가 자동으로 그려지게 연결할 수 있어요.</div>
+    </section>
+  </main>
+
+  <nav>
+    <button class="on" data-v="browse" onclick="go(this)"><span class="ni">📊</span>시세</button>
+    <button data-v="map" onclick="go(this)"><span class="ni">🗺️</span>지도</button>
+    <button data-v="shelf" onclick="go(this)"><span class="ni">💎</span>장식장</button>
+    <button data-v="admin" onclick="go(this)"><span class="ni">⚙️</span>관리</button>
+  </nav>
+</div>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ====== 데이터 ====== */
+/* hist: [{d:'2026-03-01', p:130000}, ...] 주별 한국가 시세. 마지막 값이 현재가. */
+function wk(base,n){ // 데모용 주별 히스토리 생성
+  let arr=[],v=base*0.8, d=new Date('2026-03-08');
+  for(let i=0;i<n;i++){
+    v=Math.round(v*(1+(Math.random()-0.42)*0.08));
+    arr.push({d:new Date(d).toISOString().slice(0,10), p:v});
+    d.setDate(d.getDate()+7);
+  }
+  arr[arr.length-1].p=base;
+  return arr;
+}
+let items=[
+  {id:1,title:"치소 카프카 라스트원",series:"체인소맨",rank:"라스트원",jp:16800,us:118,likes:328,emoji:"🪓",shop:"애니메이트 홍대",released:"2025-11-20"},
+  {id:2,title:"네즈코 디오라마 A상",series:"귀멸의 칼날",rank:"A상",jp:11200,us:79,likes:512,emoji:"🌸",shop:"쿠지전문점 강남",released:"2025-08-15"},
+  {id:3,title:"고죠 사토루 B상",series:"주술회전",rank:"B상",jp:8900,us:62,likes:441,emoji:"👁️",shop:"애니메이트 홍대",released:"2025-09-30"},
+  {id:4,title:"치사토 A상",series:"리코리스 리코일",rank:"A상",jp:9800,us:68,likes:267,emoji:"🎀",shop:"리셀샵 부산",released:"2025-06-10"},
+  {id:5,title:"루피 기어5 라스트원",series:"원피스",rank:"라스트원",jp:19500,us:135,likes:689,emoji:"🏴‍☠️",shop:"자체쿠지 대구",released:"2026-01-12"},
+  {id:6,title:"프리렌 C상",series:"장송의 프리렌",rank:"C상",jp:3900,us:28,likes:198,emoji:"🪄",shop:"쿠지전문점 강남",released:"2025-12-05"},
+  {id:7,title:"마키마 A상",series:"체인소맨",rank:"A상",jp:13200,us:92,likes:377,emoji:"🦊",shop:"리셀샵 부산",released:"2025-10-18"},
+  {id:8,title:"이타도리 B상",series:"주술회전",rank:"B상",jp:8400,us:58,likes:223,emoji:"🥊",shop:"애니메이트 홍대",released:"2025-07-22"},
+];
+const baseKr={1:142000,2:98000,3:76000,4:88000,5:165000,6:34000,7:112000,8:71000};
+items.forEach(it=>{it.hist=wk(baseKr[it.id],10)});
+function curKr(it){return it.hist.length?it.hist[it.hist.length-1].p:0}
+function prevKr(it){return it.hist.length>1?it.hist[it.hist.length-2].p:curKr(it)}
+
+let liked=new Set();
+let owned={};
+let sortMode="likes";
+let currency="kr";
+const series=["전체","체인소맨","귀멸의 칼날","주술회전","원피스","리코리스 리코일","장송의 프리렌"];
+let activeSeries="전체";
+
+const shops=[
+  {emoji:"🏬",name:"애니메이트 홍대점",addr:"서울 마포구 양화로",tag:"이치방쿠지",x:30,y:35},
+  {emoji:"🎰",name:"쿠지전문점 강남",addr:"서울 강남구 강남대로",tag:"자체쿠지",x:62,y:55},
+  {emoji:"💱",name:"리셀샵 부산 서면",addr:"부산 부산진구 중앙대로",tag:"리셀",x:48,y:72},
+  {emoji:"🎲",name:"자체쿠지 대구 동성로",addr:"대구 중구 동성로",tag:"자체쿠지",x:75,y:28},
+];
+
+/* ====== 통화 표시 ====== */
+const fx={kr:1, jp:1, us:1}; // 각 품목이 자체 값 보유 → 환산 아님
+function priceOf(it){
+  if(currency==="kr")return {v:curKr(it), u:"KRW", s:"₩"+curKr(it).toLocaleString()};
+  if(currency==="jp")return {v:it.jp, u:"JPY", s:"¥"+it.jp.toLocaleString()};
+  return {v:it.us, u:"USD", s:"$"+it.us.toLocaleString()};
+}
+function changePct(it){ // 전주 대비 (한국가 기준)
+  const a=prevKr(it),b=curKr(it);
+  if(!a)return 0; return ((b-a)/a)*100;
+}
+
+/* ====== 렌더 ====== */
+function setCurr(btn){document.querySelectorAll('.curr button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');currency=btn.dataset.c;render()}
+function setSort(btn){document.querySelectorAll('.sortsel button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');sortMode=btn.dataset.s;render()}
+function setSeries(s){activeSeries=s;renderChips();render()}
+function renderChips(){document.getElementById('chips').innerHTML=series.map(s=>`<div class="chip ${s===activeSeries?'on':''}" onclick="setSeries('${s}')">${s}</div>`).join('')}
+
+function render(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  let list=items.filter(it=>{
+    const okS=activeSeries==="전체"||it.series===activeSeries;
+    const okQ=!q||it.title.toLowerCase().includes(q)||it.series.toLowerCase().includes(q);
+    return okS&&okQ;
+  });
+  const lk=it=>it.likes+(liked.has(it.id)?1:0);
+  if(sortMode==="likes")list.sort((a,b)=>lk(b)-lk(a));
+  else if(sortMode==="newest")list.sort((a,b)=>new Date(b.released)-new Date(a.released));
+  else if(sortMode==="change")list.sort((a,b)=>Math.abs(changePct(b))-Math.abs(changePct(a)));
+
+  document.getElementById('list').innerHTML=list.map(it=>{
+    const p=priceOf(it);const chg=changePct(it);
+    const cls=chg>0.05?'up':chg<-0.05?'down':'flat';
+    const arrow=chg>0.05?'+':chg<-0.05?'':'';
+    return `<div class="row" onclick="openDetail(${it.id})">
+      <div class="rname">
+        <div class="rthumb">${it.emoji}<span class="rrank ${it.rank==='라스트원'?'last':''}">${it.rank}</span></div>
+        <div style="min-width:0"><div class="rtitle">${it.title}</div><div class="rseries">${it.series}</div></div>
+      </div>
+      <div class="rprice"><div class="pv">${p.s}</div><div class="pu">${p.u}</div></div>
+      <div class="rchg ${cls}">${arrow}${chg.toFixed(2)}%</div>
+      <div class="rlike" onclick="event.stopPropagation()">
+        <button class="${liked.has(it.id)?'on':''}" onclick="toggleLike(${it.id},this)">${liked.has(it.id)?'❤️':'🤍'}</button>
+        <span class="lc">${lk(it)}</span>
+      </div>
+    </div>`;
+  }).join('')||`<div style="text-align:center;color:var(--muted);padding:50px">검색 결과가 없어요 🥲</div>`;
+}
+function toggleLike(id,el){if(liked.has(id))liked.delete(id);else liked.add(id);render()}
+
+function won(n){return "₩"+Math.round(n).toLocaleString()}
+function fmt(it){const p=priceOf(it);return p.s}
+
+function renderMap(){
+  document.getElementById('mapcanvas').innerHTML=shops.map(s=>`<div class="pin" style="left:${s.x}%;top:${s.y}%"><div class="dot">📍</div><div class="lbl">${s.name.split(' ')[0]}</div></div>`).join('')+`<div class="maphint">실제 서비스: 카카오맵(다음 지도) API 연동 — 위치·길찾기</div>`;
+  document.getElementById('shoplist').innerHTML=shops.map(s=>`<div class="shop"><div class="emoji">${s.emoji}</div><div class="info"><div class="name">${s.name}</div><div class="addr">${s.addr}</div></div><div class="tag">${s.tag}</div></div>`).join('');
+}
+
+function renderShelf(){
+  const ids=Object.keys(owned).filter(k=>owned[k]>0);
+  let total=0,count=0,unit="₩";
+  ids.forEach(id=>{const it=items.find(x=>x.id==id);if(it){const p=priceOf(it);total+=p.v*owned[id];count+=owned[id];unit=p.s[0]}});
+  document.getElementById('shelfTotal').textContent=unit+Math.round(total).toLocaleString();
+  document.getElementById('shelfCount').textContent=`보유 ${ids.length}종 · ${count}개`;
+  if(ids.length===0){
+    document.getElementById('colgrid').innerHTML=`<div class="empty"><div class="emptyico">🗄️</div><div class="emptytitle">장식장이 비어있어요</div><div class="emptydesc">시세 탭에서 마음에 드는 피규어를<br>장식장에 담아보세요</div><button class="emptybtn" onclick="document.querySelector('nav button[data-v=browse]').click()">📊 시세 보러가기</button></div>`;
+    return;
+  }
+  document.getElementById('colgrid').innerHTML=ids.map(id=>{
+    const it=items.find(x=>x.id==id);if(!it)return'';const q=owned[id];const p=priceOf(it);
+    return `<div class="ccard"><div class="ce">${it.emoji}</div><div class="ct">${it.title}</div>
+      <div class="cv">${p.s} × ${q} = <b>${p.s[0]}${Math.round(p.v*q).toLocaleString()}</b></div>
+      <div class="qbtn"><span class="l">보유</span><span class="grp"><button onclick="setQty(${id},-1)">−</button><span class="n">${q}</span><button onclick="setQty(${id},1)">＋</button></span></div></div>`;
+  }).join('');
+}
+function setQty(id,d){owned[id]=Math.max(0,(owned[id]||0)+d);renderShelf()}
+
+/* ====== 차트 (주별 시세) ====== */
+function sparkline(hist){
+  if(hist.length<2)return `<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">시세 데이터가 2개 이상 쌓이면 그래프가 그려져요</div>`;
+  const w=330,h=130,pad=10;
+  const ps=hist.map(x=>x.p);const min=Math.min(...ps),max=Math.max(...ps),range=(max-min)||1;
+  const pts=hist.map((x,i)=>[pad+(i/(hist.length-1))*(w-pad*2), h-pad-((x.p-min)/range)*(h-pad*2)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=line+` L${pts[pts.length-1][0].toFixed(1)} ${h-pad} L${pts[0][0].toFixed(1)} ${h-pad} Z`;
+  const up=ps[ps.length-1]>=ps[0];const col=up?'var(--up)':'var(--down)';const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;display:block">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${col}" stop-opacity=".3"/><stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g)"/><path d="${line}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4.5" fill="${col}"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="9" fill="${col}" opacity=".25"/></svg>`;
+}
+
+function openDetail(id){
+  const it=items.find(x=>x.id==id);const p=priceOf(it);const chg=changePct(it);
+  const cls=chg>=0?'up2':'down2';const arrow=chg>=0?'▲ +':'▼ ';
+  const h0=it.hist[0],hN=it.hist[it.hist.length-1];
+  document.getElementById('sheet').innerHTML=`
+    <div class="grab"></div>
+    <div class="dhead"><div class="dthumb">${it.emoji}</div><div><div class="dtitle">${it.title}</div><div class="dseries">${it.series} · ${it.rank} · 발매 ${it.released} · ♥ ${it.likes+(liked.has(it.id)?1:0)}</div></div></div>
+    <div class="dprice"><span class="big">${p.s}</span><span class="chg ${cls}">${arrow}${Math.abs(chg).toFixed(2)}% <span style="color:var(--muted);font-weight:400;font-size:11px">전주대비</span></span></div>
+    <div class="chartcard"><div class="chartlab">📈 주별 한국 시세 (${it.hist.length}주)</div>${sparkline(it.hist)}
+      <div class="chartfoot"><span>${h0?h0.d+' · '+won(h0.p):''}</span><span>${hN?hN.d+' · '+won(hN.p):''}</span></div></div>
+    <div class="pricebox">
+      <div class="pbox"><div class="fl">🇰🇷 KRW</div><div class="vl">₩${curKr(it).toLocaleString()}</div></div>
+      <div class="pbox"><div class="fl">🇯🇵 JPY</div><div class="vl">¥${it.jp.toLocaleString()}</div></div>
+      <div class="pbox"><div class="fl">🛒 USD</div><div class="vl">$${it.us}</div></div>
+    </div>
+    <button class="addbtn" onclick="owned[${id}]=(owned[${id}]||0)+1;closeModal();flash('내 장식장에 추가됐어요 💎')">＋ 내 장식장에 담기</button>`;
+  document.getElementById('modal').classList.add('on');
+}
+function closeModal(){document.getElementById('modal').classList.remove('on')}
+
+/* ====== 관리: 주별 시세 입력 ====== */
+function renderItemSelect(){
+  document.getElementById('h_item').innerHTML=items.map(it=>`<option value="${it.id}">${it.emoji} ${it.title}</option>`).join('');
+  renderHistEditor();
+}
+function renderHistEditor(){
+  const id=+document.getElementById('h_item').value;const it=items.find(x=>x.id==id);if(!it)return;
+  document.getElementById('histlist').innerHTML=it.hist.map((x,i)=>`<div class="histitem"><span>${x.d}</span><span>${won(x.p)} <span class="x" onclick="delHist(${id},${i})">✕</span></span></div>`).join('')||'<div style="color:var(--muted);font-size:12px">아직 없음</div>';
+}
+function addHist(){
+  const id=+document.getElementById('h_item').value;const it=items.find(x=>x.id==id);
+  const d=document.getElementById('h_date').value, p=+document.getElementById('h_price').value;
+  if(!d||!p){flash('날짜와 가격을 입력해줘');return}
+  it.hist.push({d,p});it.hist.sort((a,b)=>new Date(a.d)-new Date(b.d));
+  document.getElementById('h_price').value='';
+  renderHistEditor();render();flash('시세 추가! 그래프에 반영됐어요 📈');
+}
+function delHist(id,i){const it=items.find(x=>x.id==id);it.hist.splice(i,1);renderHistEditor();render()}
+
+function addItem(){
+  const t=document.getElementById('a_title').value.trim();if(!t){flash('제목을 입력해줘');return}
+  const kr=+document.getElementById('a_kr').value||0;
+  const nid=Date.now();
+  items.unshift({id:nid,title:t,series:document.getElementById('a_series').value||"기타",rank:document.getElementById('a_rank').value,
+    jp:+document.getElementById('a_jp').value||0,us:+document.getElementById('a_us').value||0,likes:0,
+    emoji:document.getElementById('a_emoji').value||"🎁",shop:"신규 등록",released:document.getElementById('a_rel').value||"2026-05-31",
+    hist:kr?[{d:document.getElementById('a_rel').value||"2026-05-31",p:kr}]:[]});
+  document.querySelectorAll('#admin input').forEach(i=>{if(i.type!=='date')i.value=''});
+  document.getElementById('a_emoji').value='🎁';
+  renderItemSelect();render();flash('추가됐어요! 시세 탭에서 확인 👀');
+}
+
+function go(btn){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  const v=btn.dataset.v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));document.getElementById(v).classList.add('on');
+  const browse=v==='browse';
+  document.getElementById('searchwrap').style.display=browse?'block':'none';
+  document.getElementById('ctrlrow').style.display=browse?'flex':'none';
+  document.getElementById('chips').style.display=browse?'flex':'none';
+  document.getElementById('lhead').style.display=browse?'grid':'none';
+  if(v==='map')renderMap();if(v==='shelf')renderShelf();if(v==='admin')renderItemSelect();
+}
+
+function flash(m){const d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:#fff;color:#0a0a0b;padding:11px 20px;border-radius:30px;font-size:13px;font-weight:500;z-index:99;max-width:380px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5)';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)}
+
+renderChips();render();
+</script>
+</body>
+</html>
