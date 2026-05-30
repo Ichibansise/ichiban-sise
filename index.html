@@ -432,7 +432,6 @@ function render(){
     const rankTxt=it.rank?` ${it.rank}`:'';
     return `<div class="row" onclick="openDetail(${it.id})">
       <div class="rname">
-        <div class="rthumb">${thumbHtml(it,19)}</div>
         <div style="min-width:0"><div class="rtitle">${it.title}<b class="rrk">${rankTxt}</b></div><div class="rseries">${it.series||''}</div></div>
       </div>
       <div class="rprice"><div class="pv ${cls}">${p.s}</div><div class="pu">${p.u}</div></div>
@@ -503,7 +502,7 @@ function openDetail(id){
     <div class="dbigimg">${isImg?`<img src="${it.emoji}" alt="">`:`<span style="font-size:90px">${it.emoji||'🎁'}</span>`}</div>
     <div class="dtitle">${it.title} <b>${it.rank||''}</b></div>
     <div class="dseries">${it.series||''}</div>
-    <div class="dmeta">발매 ${it.released||'-'} · ♥ ${it.likes+(liked.has(it.id)?1:0)}</div>
+    <div class="dmeta">발매 ${(it.released||'').slice(0,7)||'-'} · ♥ ${it.likes+(liked.has(it.id)?1:0)}</div>
     <div class="dprice"><span class="big ${cls}">${p.s}</span><span class="punit">${p.u}</span></div>
     <div class="dchgline ${cls}">${arrow}${Math.abs(chg).toFixed(2)}%
       <span class="dchgsub">${pf.diffStr} · 전주대비</span></div>
@@ -514,7 +513,7 @@ function openDetail(id){
       <div class="pbox"><div class="fl">🇯🇵 JPY</div><div class="vl">¥${jpyV.toLocaleString()}</div></div>
       <div class="pbox"><div class="fl">🛒 USD</div><div class="vl">$${usdV}</div></div>
     </div>
-    <div class="fxnote">※ JPY·USD는 한국 시세를 실시간 환율로 환산한 값이에요 (100엔≈${Math.round(fxRate.krwPerJpy*100).toLocaleString()}원, $1≈${Math.round(fxRate.krwPerUsd).toLocaleString()}원)</div>
+    <div class="fxnote">※ JPY·USD는 한국 시세를 실시간 환율로 환산한 값이에요.</div>
     <button class="addbtn" onclick="owned[${id}]=(owned[${id}]||0)+1;closeModal();flash('내 장식장에 추가됐어요 💎')">＋ 내 장식장에 담기</button>`;
   document.getElementById('modal').classList.add('on');
 }
