@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=3c016400fc1ad46d1ff5e81eb8979475&libraries=services&autoload=false"></script>
 <style>
   :root{
     --bg:#0a0a0b;
@@ -32,7 +33,8 @@
   header{padding:16px 16px 0;flex-shrink:0;border-bottom:1px solid var(--line);background:var(--bg)}
   .brand{display:flex;align-items:center;gap:9px;margin-bottom:14px}
   .logo{width:34px;height:34px;border-radius:9px;background:var(--red);display:grid;place-items:center;
-    font-family:'Black Han Sans';font-size:18px;color:#fff;flex-shrink:0}
+    font-family:'Black Han Sans';font-size:18px;color:#fff;flex-shrink:0;overflow:hidden}
+  .logo img{width:100%;height:100%;object-fit:cover}
   .brand h1{font-family:'Black Han Sans';font-size:21px;letter-spacing:.5px}
   .brand .sub{font-size:10px;color:var(--muted);letter-spacing:3px;margin-top:2px}
   .loginbtn{margin-left:auto;background:#fee500;color:#3c1e1e;border:none;padding:7px 13px;border-radius:9px;
@@ -100,17 +102,11 @@
   .secttl{font-family:'Black Han Sans';font-size:16px;margin:16px 16px 12px;display:flex;align-items:center;gap:8px}
   .secttl .badge{font-size:11px;background:var(--red);color:#fff;padding:2px 8px;border-radius:6px;font-family:'Noto Sans KR'}
   .mapwrap{margin:0 16px}
-  .map{height:280px;border-radius:var(--radius);border:1px solid var(--line);position:relative;overflow:hidden;
-    background:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px) 0 0/28px 28px,
-      linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px) 0 0/28px 28px,var(--panel)}
-  .pin{position:absolute;transform:translate(-50%,-100%);text-align:center;cursor:pointer}
-  .pin .dot{font-size:26px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}
-  .pin .lbl{background:var(--panel2);border:1px solid var(--line);font-size:10px;padding:2px 6px;border-radius:5px;
-    margin-top:-6px;display:inline-block;white-space:nowrap}
-  .maphint{position:absolute;bottom:10px;left:10px;right:10px;font-size:10.5px;color:var(--muted);
-    background:rgba(0,0,0,.55);padding:7px 10px;border-radius:7px}
+  .map{height:320px;border-radius:var(--radius);border:1px solid var(--line);position:relative;overflow:hidden;background:var(--panel)}
+  .maphint{font-size:10.5px;color:var(--muted);padding:14px;text-align:center}
   .shoplist{margin:14px 16px 0;display:flex;flex-direction:column;gap:9px}
-  .shop{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 13px;display:flex;gap:11px;align-items:center}
+  .shop{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 13px;display:flex;gap:11px;align-items:center;cursor:pointer;transition:background .12s}
+  .shop:active{background:var(--panel2)}
   .shop .emoji{font-size:23px}
   .shop .info{flex:1}.shop .name{font-weight:700;font-size:13.5px}.shop .addr{font-size:11px;color:var(--muted);margin-top:2px}
   .shop .tag{font-size:10px;padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--redsoft)}
@@ -122,6 +118,8 @@
   .summary .label{font-size:11px;color:var(--muted);letter-spacing:2px}
   .summary .total{font-family:'Bebas Neue';font-size:44px;color:#fff;margin-top:4px;line-height:1.1}
   .summary .count{font-size:12px;color:var(--muted);margin-top:6px}
+  .savenote{margin:16px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:11px;font-size:11.5px;color:var(--muted);line-height:1.6}
   .colgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:14px 16px 0}
   .empty{grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--muted)}
   .emptyico{font-size:60px;opacity:.4;margin-bottom:14px}
@@ -171,9 +169,11 @@
   /* MODAL */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;z-index:50;max-width:430px;margin:0 auto}
   .modal.on{display:flex}
-  .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;animation:slideup .28s}
+  .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;animation:slideup .28s;transition:transform .25s ease}
   @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
-  .grab{width:38px;height:4px;background:var(--line);border-radius:2px;margin:6px auto 14px}
+  .grabzone{padding:10px 0 8px;margin:-8px -18px 6px;cursor:grab;touch-action:none}
+  .grab{width:38px;height:4px;background:var(--line);border-radius:2px;margin:0 auto}
+  .sheet.dragging{animation:none;transition:none}
   .dbigimg{width:100%;aspect-ratio:1.3;border-radius:16px;background:var(--panel2);border:1px solid var(--line);
     display:grid;place-items:center;overflow:hidden;margin-bottom:14px}
   .dbigimg img{width:100%;height:100%;object-fit:contain;background:#000}
@@ -198,13 +198,72 @@
   .fxnote{font-size:10.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
   .selltl{font-family:'Black Han Sans';font-size:14px;margin:18px 0 9px}
   .up2{color:var(--up)}.down2{color:var(--down)}
+
+  /* ============ PC (데스크탑) 반응형 ============ */
+  @media (min-width:760px){
+    body{overflow:auto}
+    /* 앱 폭 넓히고, 좌측 사이드바 + 우측 콘텐츠 2단 레이아웃 */
+    .app{max-width:1100px;height:100dvh;display:grid;
+      grid-template-columns:230px 1fr;grid-template-rows:1fr;
+      border-left:1px solid var(--line);border-right:1px solid var(--line)}
+    /* 헤더는 콘텐츠 영역 위에 */
+    header{grid-column:2;padding:22px 28px 0}
+    .brand h1{font-size:26px}
+    .logo{width:42px;height:42px}
+    .searchwrap input{padding:14px 16px 14px 44px;font-size:15px}
+    .chips{padding-bottom:14px}
+    .chip{font-size:13.5px;padding:7px 16px}
+
+    /* 하단 nav → 좌측 세로 사이드바 */
+    nav{position:static;grid-column:1;grid-row:1;flex-direction:column;justify-content:flex-start;
+      border-top:none;border-right:1px solid var(--line);background:var(--bg);
+      padding:24px 14px;gap:6px;backdrop-filter:none}
+    nav:before{content:'이치방시세';font-family:'Black Han Sans';font-size:18px;color:var(--red);
+      padding:8px 14px 20px;letter-spacing:.5px}
+    nav button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;
+      font-size:15px;padding:13px 16px;border-radius:11px;width:100%}
+    nav button .ni{font-size:22px}
+    nav button.on{background:var(--panel2);color:var(--red)}
+
+    /* 콘텐츠 영역 */
+    .lhead{grid-column:2;padding:11px 28px;grid-template-columns:1fr 140px 120px 70px;font-size:12.5px}
+    main{grid-column:2;padding-bottom:40px}
+
+    /* 리스트 큼직하게 */
+    .row{grid-template-columns:1fr 140px 120px 70px;padding:16px 28px}
+    .rtitle{font-size:15px}
+    .rseries{font-size:12.5px}
+    .rprice .pv{font-size:19px}
+    .rchg{font-size:14px}.rdiff{font-size:11px}
+    .rlike button{font-size:19px}
+
+    /* 지도/장식장/관리 영역 여백 */
+    .secttl{margin:22px 28px 14px;font-size:19px}
+    .mapwrap{margin:0 28px}.map{height:460px}
+    .shoplist{margin:16px 28px 0}
+    .summary{margin:0 28px}
+    .colgrid{grid-template-columns:repeat(4,1fr);margin:16px 28px 0}
+    .savenote{margin:18px 28px}
+    .ac,.note{margin-left:28px;margin-right:28px}
+
+    /* 상세: 우측에서 슬라이드되는 패널 */
+    .modal{align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,.5)}
+    .sheet{max-width:440px;height:100dvh;max-height:100dvh;border-radius:0;
+      border-left:1px solid var(--line);animation:slidein .3s}
+    @keyframes slidein{from{transform:translateX(100%)}to{transform:none}}
+    .grabzone{display:none} /* PC에선 드래그핸들 숨김 (배경 클릭으로 닫기) */
+  }
+  @media (min-width:760px){
+    /* PC에서 ticker 등 모바일 전용 잔재 정리 */
+    .loginbtn{font-size:13px}
+  }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
     <div class="brand">
-      <div class="logo">시</div>
+      <div class="logo"><img src="https://gphlsyitosaljocxulve.supabase.co/storage/v1/object/public/figures/Ichibansise.png" alt="로고"></div>
       <div><h1>이치방시세</h1><div class="sub">ICHIBAN PRICE</div></div>
       <div style="margin-left:auto;font-size:10px;color:var(--muted);text-align:right;line-height:1.4">한국 시세<br>트래커</div>
     </div>
@@ -235,7 +294,7 @@
     <section class="view on" id="browse"><div id="list"></div></section>
 
     <section class="view" id="map">
-      <div class="secttl">📍 입수처 찾기</div>
+      <div class="secttl">📍 굿즈샵 찾기</div>
       <div class="mapwrap"><div class="map" id="mapcanvas"></div></div>
       <div class="shoplist" id="shoplist"></div>
     </section>
@@ -248,6 +307,7 @@
         <div class="count" id="shelfCount">보유 0종 · 0개</div>
       </div>
       <div class="colgrid" id="colgrid"></div>
+      <div class="savenote" id="savenote">📱 장식장은 이 기기에만 저장돼요. 브라우저의 쿠키·캐시를 삭제하거나 다른 기기로 접속하면 기록이 초기화돼요.</div>
     </section>
 
     <section class="view" id="admin">
@@ -469,9 +529,76 @@ function toggleLike(id,el){
 function won(n){return "₩"+Math.round(n).toLocaleString()}
 function fmt(it){const p=priceOf(it);return p.s}
 
+let kakaoMap=null, kakaoMarkers=[], kakaoReady=false;
+
+function initKakaoMap(){
+  if(kakaoReady||!window.kakao||!kakao.maps)return;
+  const el=document.getElementById('mapcanvas');
+  el.innerHTML=''; // 가짜 지도 제거
+  kakaoMap=new kakao.maps.Map(el,{
+    center:new kakao.maps.LatLng(36.5,127.8), // 한국 중심
+    level:13
+  });
+  kakaoReady=true;
+}
+
 function renderMap(){
-  document.getElementById('mapcanvas').innerHTML=shops.map(s=>`<div class="pin" style="left:${s.x}%;top:${s.y}%"><div class="dot">📍</div><div class="lbl">${s.name.split(' ')[0]}</div></div>`).join('')+`<div class="maphint">실제 서비스: 카카오맵(다음 지도) API 연동 — 위치·길찾기</div>`;
-  document.getElementById('shoplist').innerHTML=shops.map(s=>`<div class="shop"><div class="emoji">${s.emoji}</div><div class="info"><div class="name">${s.name}</div><div class="addr">${s.addr}</div></div><div class="tag">${s.tag}</div></div>`).join('');
+  // SDK 로드 여부 확인
+  if(!window.kakao||!kakao.maps){
+    document.getElementById('mapcanvas').innerHTML=
+      `<div class="maphint" style="position:static;margin:0">지도를 불러오는 중이에요… (카카오맵 키/도메인 설정을 확인해보세요)</div>`;
+    renderShopList();
+    return;
+  }
+  kakao.maps.load(()=>{
+    initKakaoMap();
+    placeShops();
+  });
+  renderShopList();
+}
+
+function placeShops(){
+  if(!kakaoMap)return;
+  // 기존 마커 제거
+  kakaoMarkers.forEach(m=>m.setMap(null)); kakaoMarkers=[];
+  const geocoder=new kakao.maps.services.Geocoder();
+  const bounds=new kakao.maps.LatLngBounds();
+  let placed=0;
+
+  const addMarker=(s,lat,lng)=>{
+    const pos=new kakao.maps.LatLng(lat,lng);
+    const marker=new kakao.maps.Marker({map:kakaoMap, position:pos, title:s.name});
+    const iw=new kakao.maps.InfoWindow({
+      content:`<div style="padding:7px 10px;font-size:12px;color:#111;white-space:nowrap">
+        <b>${s.name}</b><br><span style="color:#888;font-size:11px">${s.tag||''}</span></div>`
+    });
+    kakao.maps.event.addListener(marker,'click',()=>iw.open(kakaoMap,marker));
+    kakaoMarkers.push(marker);
+    bounds.extend(pos); placed++;
+    kakaoMap.setBounds(bounds);
+  };
+
+  shops.forEach(s=>{
+    if(s.lat&&s.lng){            // 좌표 있으면 바로
+      addMarker(s, s.lat, s.lng);
+    }else if(s.addr){            // 없으면 주소 → 좌표 자동 변환
+      geocoder.addressSearch(s.addr,(result,status)=>{
+        if(status===kakao.maps.services.Status.OK){
+          addMarker(s, parseFloat(result[0].y), parseFloat(result[0].x));
+        }
+      });
+    }
+  });
+}
+
+function renderShopList(){
+  document.getElementById('shoplist').innerHTML=shops.map(s=>{
+    const q=encodeURIComponent(s.name+' '+(s.addr||''));
+    return `<div class="shop" onclick="window.open('https://map.kakao.com/?q=${q}','_blank')">
+      <div class="emoji">${s.emoji}</div>
+      <div class="info"><div class="name">${s.name}</div><div class="addr">${s.addr||''}</div></div>
+      <div class="tag">${s.tag||''}</div></div>`;
+  }).join('')||`<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px">등록된 굿즈샵이 없어요</div>`;
 }
 
 function renderShelf(){
@@ -482,8 +609,10 @@ function renderShelf(){
   document.getElementById('shelfCount').textContent=`보유 ${ids.length}종 · ${count}개`;
   if(ids.length===0){
     document.getElementById('colgrid').innerHTML=`<div class="empty"><div class="emptyico">🗄️</div><div class="emptytitle">장식장이 비어있어요</div><div class="emptydesc">시세 탭에서 마음에 드는 피규어를<br>장식장에 담아보세요</div><button class="emptybtn" onclick="document.querySelector('nav button[data-v=browse]').click()">📊 시세 보러가기</button></div>`;
+    document.getElementById('savenote').style.display='none';
     return;
   }
+  document.getElementById('savenote').style.display='block';
   document.getElementById('colgrid').innerHTML=ids.map(id=>{
     const it=items.find(x=>x.id==id);if(!it)return'';const q=owned[id];const p=priceOf(it);
     const isImg=/^https?:\/\//i.test(it.emoji||'');
@@ -529,7 +658,7 @@ function openDetail(id){
   const jpyV=Math.round(krw/fxRate.krwPerJpy), usdV=(krw/fxRate.krwPerUsd).toFixed(2);
   const isImg=/^https?:\/\//i.test(it.emoji||'');
   document.getElementById('sheet').innerHTML=`
-    <div class="grab"></div>
+    <div class="grabzone" id="grabzone"><div class="grab"></div></div>
     <div class="dbigimg">${isImg?`<img src="${it.emoji}" alt="">`:`<span style="font-size:90px">${it.emoji||'🎁'}</span>`}</div>
     <div class="dtitle">${it.title} <b>${it.rank||''}</b></div>
     <div class="dseries">${it.series||''}</div>
@@ -547,8 +676,53 @@ function openDetail(id){
     <div class="fxnote">※ JPY·USD는 한국 시세를 실시간 환율로 환산한 값이에요.</div>
     <button class="addbtn" onclick="addToShelf(${id})">＋ 내 장식장에 담기</button>`;
   document.getElementById('modal').classList.add('on');
+  setupSheetDrag();
 }
-function closeModal(){document.getElementById('modal').classList.remove('on')}
+function closeModal(){
+  const sheet=document.getElementById('sheet');
+  sheet.style.transform='';
+  sheet.classList.remove('dragging');
+  document.getElementById('modal').classList.remove('on');
+}
+
+/* 시트를 아래로 끌어서 닫기 (그랩 핸들 또는 시트 상단 드래그) */
+function setupSheetDrag(){
+  const sheet=document.getElementById('sheet');
+  const zone=document.getElementById('grabzone');
+  if(!zone)return;
+  let startY=0, curY=0, dragging=false;
+
+  const start=(y)=>{
+    // 시트가 맨 위로 스크롤된 상태에서만 드래그 닫기 허용
+    startY=y; curY=y; dragging=true;
+    sheet.classList.add('dragging');
+  };
+  const move=(y)=>{
+    if(!dragging)return;
+    curY=y;
+    const dy=Math.max(0, curY-startY);
+    sheet.style.transform=`translateY(${dy}px)`;
+  };
+  const end=()=>{
+    if(!dragging)return;
+    dragging=false;
+    const dy=curY-startY;
+    sheet.classList.remove('dragging');
+    if(dy>110){ closeModal(); }       // 충분히 내리면 닫기
+    else { sheet.style.transform=''; } // 아니면 원위치
+  };
+
+  // 터치 (모바일/사파리)
+  zone.ontouchstart=(e)=>{start(e.touches[0].clientY)};
+  zone.ontouchmove=(e)=>{move(e.touches[0].clientY); if(dragging)e.preventDefault()};
+  zone.ontouchend=end;
+  // 마우스 (데스크탑)
+  zone.onmousedown=(e)=>{start(e.clientY);
+    const mm=(ev)=>move(ev.clientY);
+    const mu=()=>{end();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu)};
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  };
+}
 
 /* ====== 관리: 주별 시세 입력 ====== */
 function renderItemSelect(){
