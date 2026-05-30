@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#0a0a0b;
@@ -285,46 +286,63 @@
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="sheet" id="sheet"></div></div>
 
 <script>
-/* ====== 데이터 ====== */
-/* hist: [{d:'2026-03-01', p:130000}, ...] 주별 한국가 시세. 마지막 값이 현재가. */
-function wk(base,n){ // 데모용 주별 히스토리 생성
-  let arr=[],v=base*0.8, d=new Date('2026-03-08');
-  for(let i=0;i<n;i++){
-    v=Math.round(v*(1+(Math.random()-0.42)*0.08));
-    arr.push({d:new Date(d).toISOString().slice(0,10), p:v});
-    d.setDate(d.getDate()+7);
-  }
-  arr[arr.length-1].p=base;
-  return arr;
-}
-let items=[
-  {id:1,title:"치소 카프카 라스트원",series:"체인소맨",rank:"라스트원",jp:16800,us:118,likes:328,emoji:"🪓",shop:"애니메이트 홍대",released:"2025-11-20"},
-  {id:2,title:"네즈코 디오라마 A상",series:"귀멸의 칼날",rank:"A상",jp:11200,us:79,likes:512,emoji:"🌸",shop:"쿠지전문점 강남",released:"2025-08-15"},
-  {id:3,title:"고죠 사토루 B상",series:"주술회전",rank:"B상",jp:8900,us:62,likes:441,emoji:"👁️",shop:"애니메이트 홍대",released:"2025-09-30"},
-  {id:4,title:"치사토 A상",series:"리코리스 리코일",rank:"A상",jp:9800,us:68,likes:267,emoji:"🎀",shop:"리셀샵 부산",released:"2025-06-10"},
-  {id:5,title:"루피 기어5 라스트원",series:"원피스",rank:"라스트원",jp:19500,us:135,likes:689,emoji:"🏴‍☠️",shop:"자체쿠지 대구",released:"2026-01-12"},
-  {id:6,title:"프리렌 C상",series:"장송의 프리렌",rank:"C상",jp:3900,us:28,likes:198,emoji:"🪄",shop:"쿠지전문점 강남",released:"2025-12-05"},
-  {id:7,title:"마키마 A상",series:"체인소맨",rank:"A상",jp:13200,us:92,likes:377,emoji:"🦊",shop:"리셀샵 부산",released:"2025-10-18"},
-  {id:8,title:"이타도리 B상",series:"주술회전",rank:"B상",jp:8400,us:58,likes:223,emoji:"🥊",shop:"애니메이트 홍대",released:"2025-07-22"},
-];
-const baseKr={1:142000,2:98000,3:76000,4:88000,5:165000,6:34000,7:112000,8:71000};
-items.forEach(it=>{it.hist=wk(baseKr[it.id],10)});
-function curKr(it){return it.hist.length?it.hist[it.hist.length-1].p:0}
-function prevKr(it){return it.hist.length>1?it.hist[it.hist.length-2].p:curKr(it)}
+/* ====== Supabase 연결 설정 ====== */
+const SUPABASE_URL = "https://gphlsyitosaljocxulve.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwaGxzeWl0b3NhbGpvY3h1bHZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDU2MTksImV4cCI6MjA5NTcyMTYxOX0.qqYRW2ztng0rLRFQf31Ip75iPdZTbbdHCkxRHwsqnkE";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ====== 데이터 (Supabase에서 로딩) ====== */
+let items=[];      // figures + 각 항목의 hist(prices) 합쳐서 채움
+let shops=[];      // shops 표
+let curKr_=(it)=>it.hist&&it.hist.length?it.hist[it.hist.length-1].p:(it.kr||0);
+function curKr(it){return curKr_(it)}
+function prevKr(it){return it.hist&&it.hist.length>1?it.hist[it.hist.length-2].p:curKr(it)}
 
 let liked=new Set();
 let owned={};
 let sortMode="likes";
 let currency="kr";
-const series=["전체","체인소맨","귀멸의 칼날","주술회전","원피스","리코리스 리코일","장송의 프리렌"];
 let activeSeries="전체";
+let series=["전체"];
 
-const shops=[
-  {emoji:"🏬",name:"애니메이트 홍대점",addr:"서울 마포구 양화로",tag:"이치방쿠지",x:30,y:35},
-  {emoji:"🎰",name:"쿠지전문점 강남",addr:"서울 강남구 강남대로",tag:"자체쿠지",x:62,y:55},
-  {emoji:"💱",name:"리셀샵 부산 서면",addr:"부산 부산진구 중앙대로",tag:"리셀",x:48,y:72},
-  {emoji:"🎲",name:"자체쿠지 대구 동성로",addr:"대구 중구 동성로",tag:"자체쿠지",x:75,y:28},
-];
+/* Supabase에서 figures + prices + shops 불러오기 */
+async function loadData(){
+  try{
+    const {data:figs,error:e1}=await sb.from('figures').select('*').order('likes',{ascending:false});
+    if(e1)throw e1;
+    const {data:prices,error:e2}=await sb.from('prices').select('*').order('date',{ascending:true});
+    if(e2)throw e2;
+    const {data:shopRows,error:e3}=await sb.from('shops').select('*');
+    if(e3)throw e3;
+
+    // figures + 해당 prices(hist) 결합
+    items=(figs||[]).map(f=>{
+      const hist=(prices||[]).filter(p=>p.figure_id===f.id).map(p=>({d:p.date,p:p.price}));
+      // prices가 없으면 figures.kr을 현재가로 한 점 표시
+      if(hist.length===0 && f.kr) hist.push({d:f.released||new Date().toISOString().slice(0,10), p:f.kr});
+      return {...f, hist};
+    });
+
+    shops=(shopRows||[]).map((s,i)=>({
+      emoji:s.tag&&s.tag.includes('리셀')?'💱':(s.tag&&s.tag.includes('자체')?'🎲':'🏬'),
+      name:s.name, addr:s.addr, tag:s.tag, lat:s.lat, lng:s.lng,
+      // 데모 지도 좌표(없으면 분산 배치)
+      x:s.lat?(20+i*18)%80+10:30+i*15, y:s.lng?(30+i*20)%60+20:35+i*12
+    }));
+
+    // 시리즈 칩 자동 생성
+    const setS=new Set(items.map(it=>it.series).filter(Boolean));
+    series=["전체",...setS];
+
+    renderChips();render();renderItemSelect&&renderItemSelect();
+  }catch(err){
+    console.error(err);
+    document.getElementById('list').innerHTML=
+      `<div style="text-align:center;color:var(--muted);padding:40px;line-height:1.7">
+        데이터를 불러오지 못했어요 😢<br><span style="font-size:11px">${(err.message||err)}</span><br>
+        <span style="font-size:11px">표 이름/RLS 설정을 확인해보세요</span></div>`;
+  }
+}
 
 /* ====== 통화 표시 ====== */
 const fx={kr:1, jp:1, us:1}; // 각 품목이 자체 값 보유 → 환산 아님
@@ -447,27 +465,39 @@ function renderHistEditor(){
   const id=+document.getElementById('h_item').value;const it=items.find(x=>x.id==id);if(!it)return;
   document.getElementById('histlist').innerHTML=it.hist.map((x,i)=>`<div class="histitem"><span>${x.d}</span><span>${won(x.p)} <span class="x" onclick="delHist(${id},${i})">✕</span></span></div>`).join('')||'<div style="color:var(--muted);font-size:12px">아직 없음</div>';
 }
-function addHist(){
+async function addHist(){
   const id=+document.getElementById('h_item').value;const it=items.find(x=>x.id==id);
   const d=document.getElementById('h_date').value, p=+document.getElementById('h_price').value;
   if(!d||!p){flash('날짜와 가격을 입력해줘');return}
+  const {error}=await sb.from('prices').insert({figure_id:id, date:d, price:p});
+  if(error){flash('저장 실패: '+error.message);return}
   it.hist.push({d,p});it.hist.sort((a,b)=>new Date(a.d)-new Date(b.d));
   document.getElementById('h_price').value='';
-  renderHistEditor();render();flash('시세 추가! 그래프에 반영됐어요 📈');
+  renderHistEditor();render();flash('시세 저장! 그래프에 반영됐어요 📈');
 }
-function delHist(id,i){const it=items.find(x=>x.id==id);it.hist.splice(i,1);renderHistEditor();render()}
+async function delHist(id,i){
+  const it=items.find(x=>x.id==id);const rec=it.hist[i];
+  await sb.from('prices').delete().eq('figure_id',id).eq('date',rec.d).eq('price',rec.p);
+  it.hist.splice(i,1);renderHistEditor();render();
+}
 
-function addItem(){
+async function addItem(){
   const t=document.getElementById('a_title').value.trim();if(!t){flash('제목을 입력해줘');return}
   const kr=+document.getElementById('a_kr').value||0;
-  const nid=Date.now();
-  items.unshift({id:nid,title:t,series:document.getElementById('a_series').value||"기타",rank:document.getElementById('a_rank').value,
-    jp:+document.getElementById('a_jp').value||0,us:+document.getElementById('a_us').value||0,likes:0,
-    emoji:document.getElementById('a_emoji').value||"🎁",shop:"신규 등록",released:document.getElementById('a_rel').value||"2026-05-31",
-    hist:kr?[{d:document.getElementById('a_rel').value||"2026-05-31",p:kr}]:[]});
+  const rel=document.getElementById('a_rel').value||null;
+  const row={
+    title:t, series:document.getElementById('a_series').value||"기타",
+    rank:document.getElementById('a_rank').value,
+    kr:kr, jp:+document.getElementById('a_jp').value||0, us:+document.getElementById('a_us').value||0,
+    likes:0, emoji:document.getElementById('a_emoji').value||"🎁", released:rel
+  };
+  const {data,error}=await sb.from('figures').insert(row).select().single();
+  if(error){flash('저장 실패: '+error.message);return}
+  // 가격이 입력됐으면 prices에도 첫 점 기록
+  if(kr && rel){ await sb.from('prices').insert({figure_id:data.id, date:rel, price:kr}); }
   document.querySelectorAll('#admin input').forEach(i=>{if(i.type!=='date')i.value=''});
   document.getElementById('a_emoji').value='🎁';
-  renderItemSelect();render();flash('추가됐어요! 시세 탭에서 확인 👀');
+  await loadData();flash('Supabase에 저장됐어요! 시세 탭에서 확인 👀');
 }
 
 function go(btn){
@@ -484,7 +514,7 @@ function go(btn){
 
 function flash(m){const d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:#fff;color:#0a0a0b;padding:11px 20px;border-radius:30px;font-size:13px;font-weight:500;z-index:99;max-width:380px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5)';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)}
 
-renderChips();render();
+renderChips();render();loadData();
 </script>
 </body>
 </html>
