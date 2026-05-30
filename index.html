@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- 카카오맵: 아래 YOUR_KAKAO_JS_KEY 를 본인 JavaScript 키로 교체하세요 -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=3c016400fc1ad46d1ff5e81eb8979475&libraries=services&autoload=false"></script>
 <style>
   :root{
@@ -229,8 +230,21 @@
     .lhead{grid-column:2;padding:11px 28px;grid-template-columns:1fr 140px 120px 70px;font-size:12.5px}
     main{grid-column:2;padding-bottom:40px}
 
+    /* 시세 탭: 업비트식 2단 (좌 리스트 / 우 상세) */
+    #browse{height:100%}
+    .browsewrap{display:grid;grid-template-columns:minmax(420px,1fr) minmax(380px,460px);
+      gap:0;height:calc(100dvh - 200px);min-height:520px}
+    .listcol{overflow-y:auto;border-right:1px solid var(--line)}
+    .detailcol{overflow-y:auto;padding:0 24px 30px;position:relative}
+    .detailempty{display:flex;align-items:center;justify-content:center;height:100%;
+      color:var(--muted);font-size:14px;text-align:center;line-height:1.7}
+    /* 우측 인라인 상세 안의 요소들 (시트 재활용) */
+    .detailcol .grabzone{display:none}
+    .detailcol .dbigimg{margin-top:20px}
+
     /* 리스트 큼직하게 */
-    .row{grid-template-columns:1fr 140px 120px 70px;padding:16px 28px}
+    .row{grid-template-columns:1fr 140px 120px 70px;padding:15px 24px}
+    .row.sel{background:var(--panel2)}
     .rtitle{font-size:15px}
     .rseries{font-size:12.5px}
     .rprice .pv{font-size:19px}
@@ -246,16 +260,8 @@
     .savenote{margin:18px 28px}
     .ac,.note{margin-left:28px;margin-right:28px}
 
-    /* 상세: 우측에서 슬라이드되는 패널 */
-    .modal{align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,.5)}
-    .sheet{max-width:440px;height:100dvh;max-height:100dvh;border-radius:0;
-      border-left:1px solid var(--line);animation:slidein .3s}
-    @keyframes slidein{from{transform:translateX(100%)}to{transform:none}}
-    .grabzone{display:none} /* PC에선 드래그핸들 숨김 (배경 클릭으로 닫기) */
-  }
-  @media (min-width:760px){
-    /* PC에서 ticker 등 모바일 전용 잔재 정리 */
-    .loginbtn{font-size:13px}
+    /* PC에선 상세를 인라인 우측 패널에 표시하므로 모달은 사용 안 함 */
+    .modal{display:none !important}
   }
 </style>
 </head>
@@ -291,7 +297,14 @@
   </div>
 
   <main>
-    <section class="view on" id="browse"><div id="list"></div></section>
+    <section class="view on" id="browse">
+      <div class="browsewrap">
+        <div class="listcol"><div id="list"></div></div>
+        <div class="detailcol" id="detailcol">
+          <div class="detailempty">← 왼쪽에서 피규어를 선택하면<br>여기에 시세 상세가 나타나요</div>
+        </div>
+      </div>
+    </section>
 
     <section class="view" id="map">
       <div class="secttl">📍 굿즈샵 찾기</div>
@@ -377,6 +390,7 @@ let sortMode="likes";
 let currency="kr";
 let activeSeries="전체";
 let series=["전체"];
+let selectedId=null;
 
 /* ====== 내 데이터: 이 기기(브라우저)에 저장 (로그인 불필요·익명) ====== */
 const LS_LIKES='ichiban_likes';
@@ -507,7 +521,7 @@ function render(){
     const cls=chg>0.005?'up':chg<-0.005?'down':'flat';
     const arrow=chg>0.005?'+':chg<-0.005?'':'';
     const rankTxt=it.rank?` ${it.rank}`:'';
-    return `<div class="row" onclick="openDetail(${it.id})">
+    return `<div class="row" data-id="${it.id}" onclick="openDetail(${it.id})">
       <div class="rname">
         <div style="min-width:0"><div class="rtitle">${it.title}<b class="rrk">${rankTxt}</b></div><div class="rseries">${it.series||''}</div></div>
       </div>
@@ -519,6 +533,12 @@ function render(){
       </div>
     </div>`;
   }).join('')||`<div style="text-align:center;color:var(--muted);padding:50px">검색 결과가 없어요 🥲</div>`;
+
+  // PC: 선택 항목 유지 또는 첫 항목 자동 선택
+  if(isPC() && list.length){
+    const stillThere=selectedId && list.some(x=>x.id===selectedId);
+    openDetail(stillThere?selectedId:list[0].id);
+  }
 }
 function toggleLike(id,el){
   if(liked.has(id))liked.delete(id);else liked.add(id);
@@ -631,7 +651,8 @@ function setQty(id,d){
 function addToShelf(id){
   owned[id]=(owned[id]||0)+1;
   saveLocal();
-  closeModal(); flash('내 장식장에 추가됐어요 💎');
+  if(!isPC())closeModal();
+  flash('내 장식장에 추가됐어요 💎');
 }
 
 /* ====== 차트 (주별 시세) ====== */
@@ -649,16 +670,16 @@ function sparkline(hist){
     <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4.5" fill="${col}"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="9" fill="${col}" opacity=".25"/></svg>`;
 }
 
-function openDetail(id){
-  const it=items.find(x=>x.id==id);const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
+function detailHtml(it, forPanel){
+  const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
   const cls=chg>0.005?'up2':chg<-0.005?'down2':'';
   const arrow=chg>0.005?'▲ +':chg<-0.005?'▼ ':'';
   const h0=it.hist[0],hN=it.hist[it.hist.length-1];
   const krw=curKr(it);
   const jpyV=Math.round(krw/fxRate.krwPerJpy), usdV=(krw/fxRate.krwPerUsd).toFixed(2);
   const isImg=/^https?:\/\//i.test(it.emoji||'');
-  document.getElementById('sheet').innerHTML=`
-    <div class="grabzone" id="grabzone"><div class="grab"></div></div>
+  const handle=forPanel?'':`<div class="grabzone" id="grabzone"><div class="grab"></div></div>`;
+  return `${handle}
     <div class="dbigimg">${isImg?`<img src="${it.emoji}" alt="">`:`<span style="font-size:90px">${it.emoji||'🎁'}</span>`}</div>
     <div class="dtitle">${it.title} <b>${it.rank||''}</b></div>
     <div class="dseries">${it.series||''}</div>
@@ -674,9 +695,28 @@ function openDetail(id){
       <div class="pbox"><div class="fl">🛒 USD</div><div class="vl">$${usdV}</div></div>
     </div>
     <div class="fxnote">※ JPY·USD는 한국 시세를 실시간 환율로 환산한 값이에요.</div>
-    <button class="addbtn" onclick="addToShelf(${id})">＋ 내 장식장에 담기</button>`;
-  document.getElementById('modal').classList.add('on');
-  setupSheetDrag();
+    <button class="addbtn" onclick="addToShelf(${it.id})">＋ 내 장식장에 담기</button>`;
+}
+
+let selectedId_unused; // (선언 상단 이동됨)
+function isPC(){return window.matchMedia('(min-width:760px)').matches}
+
+function openDetail(id){
+  const it=items.find(x=>x.id==id);if(!it)return;
+  selectedId=id;
+  if(isPC()){
+    // PC: 우측 인라인 패널에 표시 (업비트식)
+    document.getElementById('detailcol').innerHTML=detailHtml(it,true);
+    // 리스트에서 선택 항목 하이라이트
+    document.querySelectorAll('.row').forEach(r=>r.classList.remove('sel'));
+    const row=document.querySelector(`.row[data-id="${id}"]`);
+    if(row)row.classList.add('sel');
+  }else{
+    // 모바일: 기존 바텀시트 모달
+    document.getElementById('sheet').innerHTML=detailHtml(it,false);
+    document.getElementById('modal').classList.add('on');
+    setupSheetDrag();
+  }
 }
 function closeModal(){
   const sheet=document.getElementById('sheet');
@@ -784,6 +824,13 @@ function flash(m){const d=document.createElement('div');d.textContent=m;d.style.
 
 // 관리 탭: 주소 끝에 #admin 을 붙이면 나만 볼 수 있게 노출
 if(location.hash==='#admin'){document.getElementById('adminBtn').style.display='flex'}
+
+// 창 크기 바뀌면(모바일↔PC 전환) 레이아웃 다시 그리기
+let _rzTimer;
+window.addEventListener('resize',()=>{clearTimeout(_rzTimer);_rzTimer=setTimeout(()=>{
+  const cur=document.querySelector('nav button.on');
+  if(cur&&cur.dataset.v==='browse')render();
+},200)});
 
 loadLocal();renderChips();render();loadFx().then(()=>render());loadData();
 </script>
