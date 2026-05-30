@@ -77,18 +77,19 @@
     padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
   .row:active{background:var(--panel)}
   .rname{display:flex;align-items:center;gap:9px;min-width:0}
-  .rthumb{width:36px;height:36px;border-radius:8px;background:var(--panel2);display:grid;place-items:center;
-    font-size:19px;flex-shrink:0;position:relative;border:1px solid var(--line)}
-  .rrank{position:absolute;bottom:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;
-    font-weight:700;padding:1px 4px;border-radius:4px;font-family:'Noto Sans KR'}
-  .rrank.last{background:#fff;color:#0a0a0b}
+  .rthumb{width:38px;height:38px;border-radius:8px;background:var(--panel2);display:grid;place-items:center;
+    overflow:hidden;flex-shrink:0;position:relative;border:1px solid var(--line)}
   .rtitle{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rtitle .rrk{font-weight:700;color:var(--ink)}
   .rseries{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rprice{text-align:right}
-  .rprice .pv{font-family:'Bebas Neue';font-size:16px;letter-spacing:.4px}
+  .rprice .pv{font-family:'Bebas Neue';font-size:16px;letter-spacing:.4px;color:var(--ink)}
+  .rprice .pv.up{color:var(--up)}.rprice .pv.down{color:var(--down)}
   .rprice .pu{font-size:9px;color:var(--muted)}
-  .rchg{text-align:right;font-size:12.5px;font-weight:700;font-family:'Bebas Neue';letter-spacing:.3px}
-  .rchg.up{color:var(--up)}.rchg.down{color:var(--down)}.rchg.flat{color:var(--muted)}
+  .rchgbox{text-align:right}
+  .rchg{font-size:12.5px;font-weight:700;font-family:'Bebas Neue';letter-spacing:.3px}
+  .rdiff{font-size:9.5px;font-family:'Bebas Neue';letter-spacing:.2px;opacity:.85;margin-top:1px}
+  .rchgbox.up{color:var(--up)}.rchgbox.down{color:var(--down)}.rchgbox.flat{color:var(--muted)}
   .rlike{display:flex;flex-direction:column;align-items:center;gap:1px}
   .rlike button{background:none;border:none;cursor:pointer;font-size:17px;line-height:1;padding:2px}
   .rlike .lc{font-size:10px;color:var(--muted)}
@@ -128,7 +129,11 @@
   .emptydesc{font-size:13px;line-height:1.6;margin-bottom:20px}
   .emptybtn{background:var(--red);color:#fff;border:none;padding:11px 22px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR'}
   .ccard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
-  .ccard .ce{font-size:30px}.ccard .ct{font-size:12.5px;font-weight:500;margin-top:6px}
+  .ccard .ce{font-size:30px}
+  .ccard .ceimg{width:100%;aspect-ratio:1.2;border-radius:9px;overflow:hidden;background:#000;border:1px solid var(--line)}
+  .ccard .ceimg img{width:100%;height:100%;object-fit:cover}
+  .ccard .ct{font-size:12.5px;font-weight:500;margin-top:6px}
+  .ccard .ct b{color:var(--red)}
   .ccard .cv{font-size:11px;color:var(--muted);margin-top:3px}
   .ccard .cv b{color:#fff}
   .qbtn{display:flex;justify-content:space-between;align-items:center;margin-top:9px}
@@ -169,20 +174,28 @@
   .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;animation:slideup .28s}
   @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
   .grab{width:38px;height:4px;background:var(--line);border-radius:2px;margin:6px auto 14px}
-  .dhead{display:flex;align-items:center;gap:12px;margin-bottom:4px}
-  .dthumb{width:52px;height:52px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:28px}
-  .dtitle{font-family:'Black Han Sans';font-size:19px;line-height:1.15}
-  .dseries{color:var(--muted);font-size:12px;margin-top:3px}
-  .dprice{display:flex;align-items:baseline;gap:10px;margin-top:14px}
-  .dprice .big{font-family:'Bebas Neue';font-size:38px;letter-spacing:.5px}
-  .dprice .chg{font-size:14px;font-weight:700}
-  .chartcard{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:14px 12px 10px;margin-top:14px}
+  .dbigimg{width:100%;aspect-ratio:1.3;border-radius:16px;background:var(--panel2);border:1px solid var(--line);
+    display:grid;place-items:center;overflow:hidden;margin-bottom:14px}
+  .dbigimg img{width:100%;height:100%;object-fit:contain;background:#000}
+  .dtitle{font-family:'Black Han Sans';font-size:22px;line-height:1.18}
+  .dtitle b{color:var(--red)}
+  .dseries{color:var(--ink);font-size:13px;margin-top:4px;font-weight:500}
+  .dmeta{color:var(--muted);font-size:11.5px;margin-top:3px}
+  .dprice{display:flex;align-items:baseline;gap:8px;margin-top:16px}
+  .dprice .big{font-family:'Bebas Neue';font-size:40px;letter-spacing:.5px;color:var(--ink)}
+  .dprice .big.up2{color:var(--up)}.dprice .big.down2{color:var(--down)}
+  .dprice .punit{font-size:13px;color:var(--muted)}
+  .dchgline{font-size:15px;font-weight:700;margin-top:4px;color:var(--muted)}
+  .dchgline.up2{color:var(--up)}.dchgline.down2{color:var(--down)}
+  .dchgsub{font-size:11.5px;font-weight:400;color:var(--muted);margin-left:4px}
+  .chartcard{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:14px 12px 10px;margin-top:16px}
   .chartlab{font-size:11px;color:var(--muted);margin-bottom:6px}
   .chartfoot{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
   .pricebox{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:14px}
   .pbox{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center}
   .pbox .fl{font-size:10.5px;color:var(--muted)}
   .pbox .vl{font-family:'Bebas Neue';font-size:18px;margin-top:3px}
+  .fxnote{font-size:10.5px;color:var(--muted);margin-top:9px;line-height:1.5;text-align:center}
   .selltl{font-family:'Black Han Sans';font-size:14px;margin:18px 0 9px}
   .up2{color:var(--up)}.down2{color:var(--down)}
 </style>
@@ -279,7 +292,7 @@
     <button class="on" data-v="browse" onclick="go(this)"><span class="ni">📊</span>시세</button>
     <button data-v="map" onclick="go(this)"><span class="ni">🗺️</span>지도</button>
     <button data-v="shelf" onclick="go(this)"><span class="ni">💎</span>장식장</button>
-    <button data-v="admin" onclick="go(this)"><span class="ni">⚙️</span>관리</button>
+    <button data-v="admin" id="adminBtn" onclick="go(this)" style="display:none"><span class="ni">⚙️</span>관리</button>
   </nav>
 </div>
 
@@ -344,12 +357,41 @@ async function loadData(){
   }
 }
 
-/* ====== 통화 표시 ====== */
-const fx={kr:1, jp:1, us:1}; // 각 품목이 자체 값 보유 → 환산 아님
+/* ====== 통화 표시 (한국가 기준, 실시간 환율 환산) ====== */
+let fxRate={krwPerJpy:9.4, krwPerUsd:1507}; // 기본값(API 실패 시 대체)
+async function loadFx(){
+  try{
+    const r=await fetch('https://api.exchangerate.host/latest?base=KRW&symbols=JPY,USD');
+    const d=await r.json();
+    if(d&&d.rates){
+      if(d.rates.JPY) fxRate.krwPerJpy=1/d.rates.JPY;
+      if(d.rates.USD) fxRate.krwPerUsd=1/d.rates.USD;
+    }
+  }catch(e){
+    // 대체 API 시도
+    try{
+      const r2=await fetch('https://open.er-api.com/v6/latest/KRW');
+      const d2=await r2.json();
+      if(d2&&d2.rates){
+        if(d2.rates.JPY) fxRate.krwPerJpy=1/d2.rates.JPY;
+        if(d2.rates.USD) fxRate.krwPerUsd=1/d2.rates.USD;
+      }
+    }catch(e2){console.warn('환율 API 실패, 기본값 사용')}
+  }
+}
 function priceOf(it){
-  if(currency==="kr")return {v:curKr(it), u:"KRW", s:"₩"+curKr(it).toLocaleString()};
-  if(currency==="jp")return {v:it.jp, u:"JPY", s:"¥"+it.jp.toLocaleString()};
-  return {v:it.us, u:"USD", s:"$"+it.us.toLocaleString()};
+  const krw=curKr(it);
+  if(currency==="kr")return {v:krw, u:"KRW", s:"₩"+Math.round(krw).toLocaleString()};
+  if(currency==="jp"){const v=krw/fxRate.krwPerJpy;return {v, u:"JPY", s:"¥"+Math.round(v).toLocaleString()};}
+  const v=krw/fxRate.krwPerUsd;return {v, u:"USD", s:"$"+v.toFixed(2)};
+}
+function priceFull(it){ // 전주대비 증감액까지 (현재 통화로)
+  const cur=curKr(it), prev=prevKr(it), diff=cur-prev;
+  let conv=1, sym="₩", dec=0;
+  if(currency==="jp"){conv=1/fxRate.krwPerJpy;sym="¥";dec=0;}
+  else if(currency==="us"){conv=1/fxRate.krwPerUsd;sym="$";dec=2;}
+  const dv=diff*conv;
+  return {sym, diffStr:(dv>=0?"+":"")+sym+Math.abs(dv).toLocaleString(undefined,{maximumFractionDigits:dec})};
 }
 function changePct(it){ // 전주 대비 (한국가 기준)
   const a=prevKr(it),b=curKr(it);
@@ -362,11 +404,20 @@ function setSort(btn){document.querySelectorAll('.sortsel button').forEach(b=>b.
 function setSeries(s){activeSeries=s;renderChips();render()}
 function renderChips(){document.getElementById('chips').innerHTML=series.map(s=>`<div class="chip ${s===activeSeries?'on':''}" onclick="setSeries('${s}')">${s}</div>`).join('')}
 
+/* 이미지 URL 판별: http로 시작하면 이미지, 아니면 이모지 */
+function thumbHtml(it, size){
+  const e=it.emoji||'';
+  if(/^https?:\/\//i.test(e)){
+    return `<img src="${e}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" alt="">`;
+  }
+  return `<span style="font-size:${size||19}px">${e||'🎁'}</span>`;
+}
+
 function render(){
   const q=document.getElementById('q').value.trim().toLowerCase();
   let list=items.filter(it=>{
     const okS=activeSeries==="전체"||it.series===activeSeries;
-    const okQ=!q||it.title.toLowerCase().includes(q)||it.series.toLowerCase().includes(q);
+    const okQ=!q||it.title.toLowerCase().includes(q)||(it.series||'').toLowerCase().includes(q);
     return okS&&okQ;
   });
   const lk=it=>it.likes+(liked.has(it.id)?1:0);
@@ -375,16 +426,17 @@ function render(){
   else if(sortMode==="change")list.sort((a,b)=>Math.abs(changePct(b))-Math.abs(changePct(a)));
 
   document.getElementById('list').innerHTML=list.map(it=>{
-    const p=priceOf(it);const chg=changePct(it);
-    const cls=chg>0.05?'up':chg<-0.05?'down':'flat';
-    const arrow=chg>0.05?'+':chg<-0.05?'':'';
+    const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
+    const cls=chg>0.005?'up':chg<-0.005?'down':'flat';
+    const arrow=chg>0.005?'+':chg<-0.005?'':'';
+    const rankTxt=it.rank?` ${it.rank}`:'';
     return `<div class="row" onclick="openDetail(${it.id})">
       <div class="rname">
-        <div class="rthumb">${it.emoji}<span class="rrank ${it.rank==='라스트원'?'last':''}">${it.rank}</span></div>
-        <div style="min-width:0"><div class="rtitle">${it.title}</div><div class="rseries">${it.series}</div></div>
+        <div class="rthumb">${thumbHtml(it,19)}</div>
+        <div style="min-width:0"><div class="rtitle">${it.title}<b class="rrk">${rankTxt}</b></div><div class="rseries">${it.series||''}</div></div>
       </div>
-      <div class="rprice"><div class="pv">${p.s}</div><div class="pu">${p.u}</div></div>
-      <div class="rchg ${cls}">${arrow}${chg.toFixed(2)}%</div>
+      <div class="rprice"><div class="pv ${cls}">${p.s}</div><div class="pu">${p.u}</div></div>
+      <div class="rchgbox ${cls}"><div class="rchg">${arrow}${chg.toFixed(2)}%</div><div class="rdiff">${pf.diffStr.replace('+','+').replace(pf.sym,pf.sym)}</div></div>
       <div class="rlike" onclick="event.stopPropagation()">
         <button class="${liked.has(it.id)?'on':''}" onclick="toggleLike(${it.id},this)">${liked.has(it.id)?'❤️':'🤍'}</button>
         <span class="lc">${lk(it)}</span>
@@ -414,7 +466,9 @@ function renderShelf(){
   }
   document.getElementById('colgrid').innerHTML=ids.map(id=>{
     const it=items.find(x=>x.id==id);if(!it)return'';const q=owned[id];const p=priceOf(it);
-    return `<div class="ccard"><div class="ce">${it.emoji}</div><div class="ct">${it.title}</div>
+    const isImg=/^https?:\/\//i.test(it.emoji||'');
+    const ce=isImg?`<div class="ceimg"><img src="${it.emoji}" alt=""></div>`:`<div class="ce">${it.emoji||'🎁'}</div>`;
+    return `<div class="ccard">${ce}<div class="ct">${it.title} <b>${it.rank||''}</b></div>
       <div class="cv">${p.s} × ${q} = <b>${p.s[0]}${Math.round(p.v*q).toLocaleString()}</b></div>
       <div class="qbtn"><span class="l">보유</span><span class="grp"><button onclick="setQty(${id},-1)">−</button><span class="n">${q}</span><button onclick="setQty(${id},1)">＋</button></span></div></div>`;
   }).join('');
@@ -437,20 +491,30 @@ function sparkline(hist){
 }
 
 function openDetail(id){
-  const it=items.find(x=>x.id==id);const p=priceOf(it);const chg=changePct(it);
-  const cls=chg>=0?'up2':'down2';const arrow=chg>=0?'▲ +':'▼ ';
+  const it=items.find(x=>x.id==id);const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
+  const cls=chg>0.005?'up2':chg<-0.005?'down2':'';
+  const arrow=chg>0.005?'▲ +':chg<-0.005?'▼ ':'';
   const h0=it.hist[0],hN=it.hist[it.hist.length-1];
+  const krw=curKr(it);
+  const jpyV=Math.round(krw/fxRate.krwPerJpy), usdV=(krw/fxRate.krwPerUsd).toFixed(2);
+  const isImg=/^https?:\/\//i.test(it.emoji||'');
   document.getElementById('sheet').innerHTML=`
     <div class="grab"></div>
-    <div class="dhead"><div class="dthumb">${it.emoji}</div><div><div class="dtitle">${it.title}</div><div class="dseries">${it.series} · ${it.rank} · 발매 ${it.released} · ♥ ${it.likes+(liked.has(it.id)?1:0)}</div></div></div>
-    <div class="dprice"><span class="big">${p.s}</span><span class="chg ${cls}">${arrow}${Math.abs(chg).toFixed(2)}% <span style="color:var(--muted);font-weight:400;font-size:11px">전주대비</span></span></div>
-    <div class="chartcard"><div class="chartlab">📈 주별 한국 시세 (${it.hist.length}주)</div>${sparkline(it.hist)}
+    <div class="dbigimg">${isImg?`<img src="${it.emoji}" alt="">`:`<span style="font-size:90px">${it.emoji||'🎁'}</span>`}</div>
+    <div class="dtitle">${it.title} <b>${it.rank||''}</b></div>
+    <div class="dseries">${it.series||''}</div>
+    <div class="dmeta">발매 ${it.released||'-'} · ♥ ${it.likes+(liked.has(it.id)?1:0)}</div>
+    <div class="dprice"><span class="big ${cls}">${p.s}</span><span class="punit">${p.u}</span></div>
+    <div class="dchgline ${cls}">${arrow}${Math.abs(chg).toFixed(2)}%
+      <span class="dchgsub">${pf.diffStr} · 전주대비</span></div>
+    <div class="chartcard"><div class="chartlab">📈 주별 한국 시세 (KRW 기준 · ${it.hist.length}주)</div>${sparkline(it.hist)}
       <div class="chartfoot"><span>${h0?h0.d+' · '+won(h0.p):''}</span><span>${hN?hN.d+' · '+won(hN.p):''}</span></div></div>
     <div class="pricebox">
-      <div class="pbox"><div class="fl">🇰🇷 KRW</div><div class="vl">₩${curKr(it).toLocaleString()}</div></div>
-      <div class="pbox"><div class="fl">🇯🇵 JPY</div><div class="vl">¥${it.jp.toLocaleString()}</div></div>
-      <div class="pbox"><div class="fl">🛒 USD</div><div class="vl">$${it.us}</div></div>
+      <div class="pbox"><div class="fl">🇰🇷 KRW</div><div class="vl">₩${Math.round(krw).toLocaleString()}</div></div>
+      <div class="pbox"><div class="fl">🇯🇵 JPY</div><div class="vl">¥${jpyV.toLocaleString()}</div></div>
+      <div class="pbox"><div class="fl">🛒 USD</div><div class="vl">$${usdV}</div></div>
     </div>
+    <div class="fxnote">※ JPY·USD는 한국 시세를 실시간 환율로 환산한 값이에요 (100엔≈${Math.round(fxRate.krwPerJpy*100).toLocaleString()}원, $1≈${Math.round(fxRate.krwPerUsd).toLocaleString()}원)</div>
     <button class="addbtn" onclick="owned[${id}]=(owned[${id}]||0)+1;closeModal();flash('내 장식장에 추가됐어요 💎')">＋ 내 장식장에 담기</button>`;
   document.getElementById('modal').classList.add('on');
 }
@@ -514,7 +578,10 @@ function go(btn){
 
 function flash(m){const d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:#fff;color:#0a0a0b;padding:11px 20px;border-radius:30px;font-size:13px;font-weight:500;z-index:99;max-width:380px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5)';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)}
 
-renderChips();render();loadData();
+// 관리 탭: 주소 끝에 #admin 을 붙이면 나만 볼 수 있게 노출
+if(location.hash==='#admin'){document.getElementById('adminBtn').style.display='flex'}
+
+renderChips();render();loadFx().then(()=>render());loadData();
 </script>
 </body>
 </html>
