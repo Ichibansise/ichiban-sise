@@ -206,7 +206,7 @@
     <div class="brand">
       <div class="logo">시</div>
       <div><h1>이치방시세</h1><div class="sub">ICHIBAN PRICE</div></div>
-      <button class="loginbtn" id="loginbtn" onclick="handleAuth()">💬 로그인</button>
+      <div style="margin-left:auto;font-size:10px;color:var(--muted);text-align:right;line-height:1.4">한국 시세<br>트래커</div>
     </div>
     <div class="searchwrap" id="searchwrap">
       <span class="ico">🔍</span>
@@ -317,58 +317,22 @@ let sortMode="likes";
 let currency="kr";
 let activeSeries="전체";
 let series=["전체"];
-let currentUser=null;  // 로그인한 사용자
 
-/* ====== 로그인 / 로그아웃 ====== */
-async function handleAuth(){
-  if(currentUser){
-    // 이미 로그인 → 로그아웃
-    await sb.auth.signOut();
-    currentUser=null; liked=new Set(); owned={};
-    updateAuthUI(); render();
-    flash('로그아웃 했어요');
-  }else{
-    // 카카오 로그인 시작 (이메일 제외, 닉네임/프로필만 요청)
-    const {error}=await sb.auth.signInWithOAuth({
-      provider:'kakao',
-      options:{
-        redirectTo: location.origin+location.pathname,
-        scopes: 'profile_nickname profile_image'
-      }
-    });
-    if(error)flash('로그인 오류: '+error.message);
-  }
-}
+/* ====== 내 데이터: 이 기기(브라우저)에 저장 (로그인 불필요·익명) ====== */
+const LS_LIKES='ichiban_likes';
+const LS_OWNED='ichiban_owned';
 
-function updateAuthUI(){
-  const btn=document.getElementById('loginbtn');
-  if(currentUser){
-    const nick=currentUser.user_metadata?.name||currentUser.user_metadata?.full_name||'사용자';
-    btn.textContent='👤 '+nick;
-    btn.style.background='#fff';
-  }else{
-    btn.textContent='💬 로그인';
-    btn.style.background='#fee500';
-  }
-}
-
-/* 로그인 상태 확인 + 내 좋아요/장식장 불러오기 */
-async function checkAuth(){
-  const {data:{session}}=await sb.auth.getSession();
-  currentUser=session?session.user:null;
-  updateAuthUI();
-  if(currentUser) await loadMyData();
-}
-
-async function loadMyData(){
-  if(!currentUser)return;
+function saveLocal(){
   try{
-    const {data:likeRows}=await sb.from('user_likes').select('figure_id').eq('user_id',currentUser.id);
-    liked=new Set((likeRows||[]).map(r=>r.figure_id));
-    const {data:colRows}=await sb.from('user_collections').select('figure_id,qty').eq('user_id',currentUser.id);
-    owned={}; (colRows||[]).forEach(r=>{owned[r.figure_id]=r.qty});
-    render();
-  }catch(e){console.warn('내 데이터 로딩 실패',e)}
+    localStorage.setItem(LS_LIKES, JSON.stringify([...liked]));
+    localStorage.setItem(LS_OWNED, JSON.stringify(owned));
+  }catch(e){/* 시크릿모드 등에서 막히면 무시 */}
+}
+function loadLocal(){
+  try{
+    const l=localStorage.getItem(LS_LIKES); if(l)liked=new Set(JSON.parse(l));
+    const o=localStorage.getItem(LS_OWNED); if(o)owned=JSON.parse(o);
+  }catch(e){/* 무시 */}
 }
 
 /* Supabase에서 figures + prices + shops 불러오기 */
@@ -496,15 +460,9 @@ function render(){
     </div>`;
   }).join('')||`<div style="text-align:center;color:var(--muted);padding:50px">검색 결과가 없어요 🥲</div>`;
 }
-async function toggleLike(id,el){
-  if(!currentUser){flash('로그인하면 좋아요를 저장할 수 있어요 💬');return}
-  if(liked.has(id)){
-    liked.delete(id);
-    await sb.from('user_likes').delete().eq('user_id',currentUser.id).eq('figure_id',id);
-  }else{
-    liked.add(id);
-    await sb.from('user_likes').insert({user_id:currentUser.id, figure_id:id});
-  }
+function toggleLike(id,el){
+  if(liked.has(id))liked.delete(id);else liked.add(id);
+  saveLocal();
   render();
 }
 
@@ -535,22 +493,15 @@ function renderShelf(){
       <div class="qbtn"><span class="l">보유</span><span class="grp"><button onclick="setQty(${id},-1)">−</button><span class="n">${q}</span><button onclick="setQty(${id},1)">＋</button></span></div></div>`;
   }).join('');
 }
-async function setQty(id,d){
-  if(!currentUser){flash('로그인하면 장식장을 저장할 수 있어요 💬');return}
+function setQty(id,d){
   const q=Math.max(0,(owned[id]||0)+d);
-  owned[id]=q;
-  if(q===0){
-    await sb.from('user_collections').delete().eq('user_id',currentUser.id).eq('figure_id',id);
-  }else{
-    await sb.from('user_collections').upsert({user_id:currentUser.id, figure_id:id, qty:q},{onConflict:'user_id,figure_id'});
-  }
+  if(q===0)delete owned[id];else owned[id]=q;
+  saveLocal();
   renderShelf();
 }
-async function addToShelf(id){
-  if(!currentUser){closeModal();flash('로그인하면 장식장에 담을 수 있어요 💬');return}
-  const q=(owned[id]||0)+1;
-  owned[id]=q;
-  await sb.from('user_collections').upsert({user_id:currentUser.id, figure_id:id, qty:q},{onConflict:'user_id,figure_id'});
+function addToShelf(id){
+  owned[id]=(owned[id]||0)+1;
+  saveLocal();
   closeModal(); flash('내 장식장에 추가됐어요 💎');
 }
 
@@ -660,7 +611,7 @@ function flash(m){const d=document.createElement('div');d.textContent=m;d.style.
 // 관리 탭: 주소 끝에 #admin 을 붙이면 나만 볼 수 있게 노출
 if(location.hash==='#admin'){document.getElementById('adminBtn').style.display='flex'}
 
-renderChips();render();loadFx().then(()=>render());loadData();checkAuth();
+loadLocal();renderChips();render();loadFx().then(()=>render());loadData();
 </script>
 </body>
 </html>
