@@ -275,7 +275,7 @@
         <button data-s="likes" onclick="setSort(this)">좋아요순</button>
       </div>
     </div>
-    <div class="chips" id="chips"></div>
+    <div class="chips" id="chips" style="display:none"></div>
   </header>
 
   <div class="lhead" id="lhead">
@@ -415,9 +415,6 @@ async function loadData(){
     }));
 
     // 시리즈 칩 자동 생성
-    const setS=new Set(items.map(it=>it.series).filter(Boolean));
-    series=["전체",...setS];
-
     renderChips();render();renderItemSelect&&renderItemSelect();
   }catch(err){
     console.error(err);
@@ -549,29 +546,32 @@ function fmt(it){const p=priceOf(it);return p.s}
 let kakaoMap=null, kakaoMarkers=[], kakaoReady=false;
 
 function initKakaoMap(){
-  if(kakaoReady||!window.kakao||!kakao.maps)return;
+  if(kakaoReady)return;
+  if(!window.kakao||!kakao.maps||!kakao.maps.Map)return;
   const el=document.getElementById('mapcanvas');
-  el.innerHTML=''; // 가짜 지도 제거
+  el.innerHTML='';
   kakaoMap=new kakao.maps.Map(el,{
-    center:new kakao.maps.LatLng(36.5,127.8), // 한국 중심
+    center:new kakao.maps.LatLng(36.5,127.8),
     level:13
   });
   kakaoReady=true;
 }
 
 function renderMap(){
-  // SDK 로드 여부 확인
-  if(!window.kakao||!kakao.maps){
+  renderShopList();
+  // SDK 자체가 로드 안 됨 (키/도메인 문제 또는 네트워크)
+  if(!window.kakao || !window.kakao.maps || !kakao.maps.load){
     document.getElementById('mapcanvas').innerHTML=
-      `<div class="maphint" style="position:static;margin:0">지도를 불러오는 중이에요… (카카오맵 키/도메인 설정을 확인해보세요)</div>`;
-    renderShopList();
+      `<div class="maphint" style="position:static;margin:0;padding:30px">지도를 불러오지 못했어요.<br>카카오맵 JavaScript 키와 사이트 도메인 등록을 확인해보세요.</div>`;
     return;
   }
+  // autoload=false 이므로 load 콜백 안에서 지도 생성
   kakao.maps.load(()=>{
     initKakaoMap();
     placeShops();
+    // 탭 전환 직후 컨테이너 크기 0일 수 있어 relayout
+    setTimeout(()=>{ if(kakaoMap)kakaoMap.relayout(); }, 200);
   });
-  renderShopList();
 }
 
 function placeShops(){
@@ -800,7 +800,7 @@ function go(btn){
   const browse=v==='browse';
   document.getElementById('searchwrap').style.display=browse?'block':'none';
   document.getElementById('ctrlrow').style.display=browse?'flex':'none';
-  document.getElementById('chips').style.display=browse?'flex':'none';
+  document.getElementById('chips').style.display='none';
   document.getElementById('lhead').style.display=browse?'grid':'none';
   if(browse)render();
   if(v==='map')renderMap();if(v==='shelf')renderShelf();if(v==='admin')renderItemSelect();
