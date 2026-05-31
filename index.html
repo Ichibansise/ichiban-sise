@@ -241,20 +241,16 @@
     .savenote{margin:18px 28px}
     .ac,.note{margin-left:28px;margin-right:28px;max-width:560px}
 
-    /* 상세: 가운데 떠 있는 가로형 오버레이 + X 버튼으로 닫기 */
+    /* 상세: 가운데 떠 있는 오버레이 + X 버튼으로 닫기 (세로 흐름, 넓은 창) */
     .modal{align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
-    .sheet{max-width:860px;width:860px;max-height:88dvh;border-radius:18px;border:1px solid var(--line);
-      animation:popin .2s;padding:40px 32px 32px;overflow-x:hidden;overflow-y:auto;
-      display:grid;grid-template-columns:340px minmax(0,1fr);column-gap:32px;align-items:start}
+    .sheet{max-width:620px;width:620px;max-height:90dvh;border-radius:18px;border:1px solid var(--line);
+      animation:popin .2s;padding:42px 32px 32px;overflow-x:hidden;overflow-y:auto}
     @keyframes popin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
     .grabzone{display:none}
     .sheetclose{display:flex}
-    /* 좌측: 이미지 고정 / 우측: 정보 (가로 넘침 방지) */
-    .sheet .dbigimg{grid-column:1;grid-row:1 / span 99;margin:0;position:sticky;top:0}
-    .sheet .dtitle,.sheet .dseries,.sheet .dmeta,.sheet .dprice,.sheet .dchgline,
-    .sheet .chartcard,.sheet .pricebox,.sheet .fxnote,.sheet .addbtn{grid-column:2;min-width:0;max-width:100%}
+    /* PC에서 이미지 적당히 크게 (세로 배치, 정사각형) */
+    .sheet .dbigimg{max-width:420px;margin:0 auto 18px}
     .sheet .chartcard svg{max-width:100%;height:auto}
-    .sheet .dtitle{margin-top:0}
   }
 </style>
 </head>
@@ -286,7 +282,7 @@
   </header>
 
   <div class="lhead" id="lhead">
-    <span>피규어</span><span class="r">현재가</span><span class="r">전주대비</span><span class="c">♥</span>
+    <span>피규어</span><span class="r">현재가</span><span class="r">출시대비</span><span class="c">♥</span>
   </div>
 
   <main>
@@ -369,6 +365,7 @@ let shops=[];      // shops 표
 let curKr_=(it)=>it.hist&&it.hist.length?it.hist[it.hist.length-1].p:(it.kr||0);
 function curKr(it){return curKr_(it)}
 function prevKr(it){return it.hist&&it.hist.length>1?it.hist[it.hist.length-2].p:curKr(it)}
+function firstKr(it){return it.hist&&it.hist.length?it.hist[0].p:curKr(it)} // 가장 오래된 시세(출시일쯤)
 
 let liked=new Set();
 let owned={};
@@ -460,16 +457,16 @@ function priceOf(it){
   if(currency==="jp"){const v=krw/fxRate.krwPerJpy;return {v, u:"JPY", s:"¥"+Math.round(v).toLocaleString()};}
   const v=krw/fxRate.krwPerUsd;return {v, u:"USD", s:"$"+v.toFixed(2)};
 }
-function priceFull(it){ // 전주대비 증감액까지 (현재 통화로)
-  const cur=curKr(it), prev=prevKr(it), diff=cur-prev;
+function priceFull(it){ // 출시일대비 증감액 (현재 통화로)
+  const cur=curKr(it), base=firstKr(it), diff=cur-base;
   let conv=1, sym="₩", dec=0;
   if(currency==="jp"){conv=1/fxRate.krwPerJpy;sym="¥";dec=0;}
   else if(currency==="us"){conv=1/fxRate.krwPerUsd;sym="$";dec=2;}
   const dv=diff*conv;
   return {sym, diffStr:(dv>=0?"+":"")+sym+Math.abs(dv).toLocaleString(undefined,{maximumFractionDigits:dec})};
 }
-function changePct(it){ // 전주 대비 (한국가 기준)
-  const a=prevKr(it),b=curKr(it);
+function changePct(it){ // 출시일대비 (한국가 기준)
+  const a=firstKr(it),b=curKr(it);
   if(!a)return 0; return ((b-a)/a)*100;
 }
 
@@ -689,7 +686,7 @@ function detailHtml(it){
     <div class="dmeta">발매 ${(it.released||'').slice(0,7)||'-'} · ♥ ${it.likes+(liked.has(it.id)?1:0)}</div>
     <div class="dprice"><span class="big ${cls}">${p.s}</span><span class="punit">${p.u}</span></div>
     <div class="dchgline ${cls}">${arrow}${Math.abs(chg).toFixed(2)}%
-      <span class="dchgsub">${pf.diffStr} · 전주대비</span></div>
+      <span class="dchgsub">${pf.diffStr} · 출시일대비</span></div>
     <div class="chartcard"><div class="chartlab">📈 주별 한국 시세 (KRW 기준 · ${it.hist.length}주)</div>${sparkline(it.hist)}
       <div class="chartfoot"><span>${h0?h0.d+' · '+won(h0.p):''}</span><span>${hN?hN.d+' · '+won(hN.p):''}</span></div></div>
     <div class="pricebox">
