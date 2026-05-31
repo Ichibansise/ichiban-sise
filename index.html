@@ -462,12 +462,15 @@ async function loadData(){
       return {...f, hist};
     });
 
-    shops=(shopRows||[]).map((s,i)=>({
-      emoji:s.tag&&s.tag.includes('리셀')?'💱':(s.tag&&s.tag.includes('자체')?'🎲':'🏬'),
-      name:s.name, addr:s.addr, tag:s.tag, lat:s.lat, lng:s.lng,
-      // 데모 지도 좌표(없으면 분산 배치)
-      x:s.lat?(20+i*18)%80+10:30+i*15, y:s.lng?(30+i*20)%60+20:35+i*12
-    }));
+    shops=(shopRows||[]).map((s)=>{
+      const t=s.tag||'';
+      let emoji='🏬';
+      if(t.includes('공식'))emoji='🎯';
+      else if(t.includes('애니'))emoji='🏬';
+      else if(t.includes('중고'))emoji='💱';
+      else emoji='📦';
+      return {name:s.name, addr:s.addr, tag:s.tag, lat:s.lat, lng:s.lng, emoji};
+    });
 
     // 시리즈 칩 자동 생성
     renderChips();render();renderItemSelect&&renderItemSelect();
@@ -653,13 +656,12 @@ function renderMap(){
 
 function placeShops(){
   if(!kakaoMap)return;
-  // 기존 마커 제거
   kakaoMarkers.forEach(m=>m.setMap(null)); kakaoMarkers=[];
   const geocoder=new kakao.maps.services.Geocoder();
   const bounds=new kakao.maps.LatLngBounds();
-  let placed=0;
 
   const addMarker=(s,lat,lng)=>{
+    s._lat=lat; s._lng=lng; // 줌인용 좌표 저장
     const pos=new kakao.maps.LatLng(lat,lng);
     const marker=new kakao.maps.Marker({map:kakaoMap, position:pos, title:s.name});
     const iw=new kakao.maps.InfoWindow({
@@ -667,15 +669,16 @@ function placeShops(){
         <b>${s.name}</b><br><span style="color:#888;font-size:11px">${s.tag||''}</span></div>`
     });
     kakao.maps.event.addListener(marker,'click',()=>iw.open(kakaoMap,marker));
+    s._marker=marker; s._iw=iw;
     kakaoMarkers.push(marker);
-    bounds.extend(pos); placed++;
-    kakaoMap.setBounds(bounds);
+    bounds.extend(pos);
+    if(!bounds.isEmpty())kakaoMap.setBounds(bounds);
   };
 
   shops.forEach(s=>{
-    if(s.lat&&s.lng){            // 좌표 있으면 바로
+    if(s.lat&&s.lng){
       addMarker(s, s.lat, s.lng);
-    }else if(s.addr){            // 없으면 주소 → 좌표 자동 변환
+    }else if(s.addr){
       geocoder.addressSearch(s.addr,(result,status)=>{
         if(status===kakao.maps.services.Status.OK){
           addMarker(s, parseFloat(result[0].y), parseFloat(result[0].x));
@@ -685,10 +688,41 @@ function placeShops(){
   });
 }
 
+// 리스트에서 가게 클릭 → 지도에서 그 위치로 줌인
+function focusShop(idx){
+  const s=shops[idx];
+  if(!s||!kakaoMap){return;}
+  if(s._lat&&s._lng){
+    kakaoMap.setLevel(3);
+    kakaoMap.panTo(new kakao.maps.LatLng(s._lat,s._lng));
+    if(s._iw&&s._marker)s._iw.open(kakaoMap,s._marker);
+    // 지도가 화면 위에 있으니 스크롤 업
+    document.querySelector('#map').scrollIntoView({behavior:'smooth',block:'start'});
+  }else if(s.addr){
+    // 아직 좌표 변환 전이면 한 번 시도
+    const g=new kakao.maps.services.Geocoder();
+    g.addressSearch(s.addr,(r,st)=>{
+      if(st===kakao.maps.services.Status.OK){
+        const lat=parseFloat(r[0].y),lng=parseFloat(r[0].x);
+        s._lat=lat;s._lng=lng;
+        kakaoMap.setLevel(3);kakaoMap.panTo(new kakao.maps.LatLng(lat,lng));
+        document.querySelector('#map').scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    });
+  }
+}
+
+const TAG_ORDER=['이치방쿠지 공식 판매점','애니 굿즈샵','중고 굿즈샵','기타'];
+function tagRank(t){
+  const i=TAG_ORDER.indexOf(t);
+  return i===-1?TAG_ORDER.length:i; // 목록에 없는 태그는 맨 뒤
+}
 function renderShopList(){
-  document.getElementById('shoplist').innerHTML=shops.map(s=>{
-    const q=encodeURIComponent(s.name+' '+(s.addr||''));
-    return `<div class="shop" onclick="window.open('https://map.kakao.com/?q=${q}','_blank')">
+  // 원본 인덱스 유지하면서 태그 순서로 정렬
+  const ordered=shops.map((s,idx)=>({s,idx}))
+    .sort((a,b)=>tagRank(a.s.tag)-tagRank(b.s.tag));
+  document.getElementById('shoplist').innerHTML=ordered.map(({s,idx})=>{
+    return `<div class="shop" onclick="focusShop(${idx})">
       <div class="emoji">${s.emoji}</div>
       <div class="info"><div class="name">${s.name}</div><div class="addr">${s.addr||''}</div></div>
       <div class="tag">${s.tag||''}</div></div>`;
