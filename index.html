@@ -796,13 +796,16 @@ function editBuy(id){
 function addToShelf(id){
   const it=items.find(x=>x.id==id);
   if(!owned[id])owned[id]={qty:0,buy:0};
-  // 처음 담을 때만 구매가 물어봄 (현재 시세를 기본값으로 제안)
-  if(owned[id].qty===0){
-    const v=prompt('구매가(1개당, 원)를 입력하세요.\n모르면 비워두고 확인을 눌러도 돼요.', curKr(it)||'');
-    const n=parseInt(String(v||'').replace(/[^0-9]/g,''))||0;
-    owned[id].buy=n;
+  const o=owned[id];
+  // 담을 때마다 이번 구매가를 물어봄 (현재 시세를 기본값 제안)
+  const v=prompt('이번에 산 구매가(1개당, 원)를 입력하세요.\n모르면 비워두고 확인을 눌러도 돼요.', curKr(it)||'');
+  const n=parseInt(String(v||'').replace(/[^0-9]/g,''))||0;
+  // 평단가 계산: (기존 단가×기존수량 + 이번가격) / (기존수량+1)
+  if(n>0){
+    const prevTotal=(o.buy||0)*o.qty;
+    o.buy=Math.round((prevTotal+n)/(o.qty+1));
   }
-  owned[id].qty+=1;
+  o.qty+=1;
   saveLocal();
   closeModal(); flash('내 장식장에 추가됐어요 💎');
 }
