@@ -781,8 +781,22 @@ function renderShelf(){
 }
 function setQty(id,d){
   if(!owned[id])owned[id]={qty:0,buy:0};
-  const q=Math.max(0,owned[id].qty+d);
-  if(q===0)delete owned[id];else owned[id].qty=q;
+  const o=owned[id];
+  if(d>0){
+    // 하나 더 추가 → 이번 구매가 묻고 평단가 갱신
+    const it=items.find(x=>x.id==id);
+    const v=prompt('이번에 산 구매가(1개당, 원)를 입력하세요.\n모르면 비워두고 확인을 눌러도 돼요.', (it?curKr(it):'')||'');
+    const n=parseInt(String(v||'').replace(/[^0-9]/g,''))||0;
+    if(n>0){
+      const prevTotal=(o.buy||0)*o.qty;
+      o.buy=Math.round((prevTotal+n)/(o.qty+1));
+    }
+    o.qty+=1;
+  }else{
+    // 빼기 → 수량만 감소 (평단가 유지)
+    o.qty=Math.max(0,o.qty-1);
+  }
+  if(o.qty===0)delete owned[id];
   saveLocal();
   renderShelf();
 }
