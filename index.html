@@ -209,6 +209,9 @@
   .dchgtag{font-size:10.5px;font-weight:400;color:var(--muted);margin-bottom:1px}
   .chartcard{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:14px 12px 10px;margin-top:16px}
   .chartlab{font-size:11px;color:var(--muted);margin-bottom:6px}
+  .charthl{display:flex;gap:14px;font-size:11.5px;font-family:'Bebas Neue';letter-spacing:.3px;margin-bottom:8px}
+  .charthl .hi{color:var(--up)}
+  .charthl .lo{color:var(--down)}
   .chartfoot{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
   .pricebox{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:14px}
   .pbox{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center}
@@ -815,7 +818,10 @@ function detailHtml(it){
     <div class="dmeta">발매 ${(it.released||'').slice(0,7)||'-'} · 👍 ${it.likes+(liked.has(it.id)?1:0)} · ⭐ ${r.cnt?r.avg.toFixed(1):'-'} (${r.cnt})</div>
     <div class="dprice"><span class="big">${p.s}</span><span class="punit">${p.u}</span></div>
     <div class="dchgwrap">${seg('전달대비',cp)}${seg('출시대비',cf)}</div>
-    <div class="chartcard"><div class="chartlab">📈 한국 시세 추이 (KRW${period?' · '+period:''})</div>${sparkline(it.hist)}
+    <div class="chartcard">
+      <div class="chartlab">📈 한국 시세 추이 (KRW${period?' · '+period:''})</div>
+      ${it.hist.length?`<div class="charthl"><span class="hi">최고 ₩${Math.max(...it.hist.map(x=>x.p)).toLocaleString()}</span><span class="lo">최저 ₩${Math.min(...it.hist.map(x=>x.p)).toLocaleString()}</span></div>`:''}
+      ${sparkline(it.hist)}
       <div class="chartfoot"><span>${h0?h0.d+' · '+won(h0.p):''}</span><span>${hN?hN.d+' · '+won(hN.p):''}</span></div></div>
     <div class="pricebox">
       <div class="pbox"><div class="fl">🇰🇷 KRW</div><div class="vl">₩${Math.round(krw).toLocaleString()}</div></div>
