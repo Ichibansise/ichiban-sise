@@ -171,7 +171,7 @@
   /* MODAL */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;z-index:50;max-width:430px;margin:0 auto}
   .modal.on{display:flex}
-  .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;animation:slideup .28s;transition:transform .25s ease;position:relative}
+  .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;overflow-x:hidden;animation:slideup .28s;transition:transform .25s ease;position:relative}
   @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
   .grabzone{padding:10px 0 8px;margin:-8px -18px 6px;cursor:grab;touch-action:none}
   .sheetclose{display:none;position:absolute;top:12px;right:14px;width:34px;height:34px;border-radius:50%;
@@ -244,15 +244,16 @@
     /* 상세: 가운데 떠 있는 가로형 오버레이 + X 버튼으로 닫기 */
     .modal{align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
     .sheet{max-width:860px;width:860px;max-height:88dvh;border-radius:18px;border:1px solid var(--line);
-      animation:popin .2s;padding:40px 32px 32px;
-      display:grid;grid-template-columns:340px 1fr;column-gap:32px;align-items:start}
+      animation:popin .2s;padding:40px 32px 32px;overflow-x:hidden;overflow-y:auto;
+      display:grid;grid-template-columns:340px minmax(0,1fr);column-gap:32px;align-items:start}
     @keyframes popin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
     .grabzone{display:none}
     .sheetclose{display:flex}
-    /* 좌측: 이미지 / 우측: 나머지 정보 전부 */
+    /* 좌측: 이미지 고정 / 우측: 정보 (가로 넘침 방지) */
     .sheet .dbigimg{grid-column:1;grid-row:1 / span 99;margin:0;position:sticky;top:0}
     .sheet .dtitle,.sheet .dseries,.sheet .dmeta,.sheet .dprice,.sheet .dchgline,
-    .sheet .chartcard,.sheet .pricebox,.sheet .fxnote,.sheet .addbtn{grid-column:2}
+    .sheet .chartcard,.sheet .pricebox,.sheet .fxnote,.sheet .addbtn{grid-column:2;min-width:0;max-width:100%}
+    .sheet .chartcard svg{max-width:100%;height:auto}
     .sheet .dtitle{margin-top:0}
   }
 </style>
