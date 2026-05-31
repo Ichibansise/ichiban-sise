@@ -95,7 +95,8 @@
   .rdiff{font-size:9.5px;font-family:'Bebas Neue';letter-spacing:.2px;opacity:.85;margin-top:1px}
   .rchgbox.up{color:var(--up)}.rchgbox.down{color:var(--down)}.rchgbox.flat{color:var(--muted)}
   .rlike{display:flex;flex-direction:column;align-items:center;gap:1px}
-  .rlike button{background:none;border:none;cursor:pointer;font-size:17px;line-height:1;padding:2px}
+  .rlike button{background:none;border:none;cursor:pointer;font-size:17px;line-height:1;padding:2px;filter:grayscale(1);opacity:.45;transition:.15s}
+  .rlike button.on{filter:none;opacity:1}
   .rlike .lc{font-size:10px;color:var(--muted)}
   .rlike button.on{animation:pop .3s}
   @keyframes pop{50%{transform:scale(1.4)}}
@@ -219,9 +220,12 @@
   .ratehead{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:8px}
   .ratehead .ratecnt{color:var(--muted);font-weight:400;font-size:11.5px}
   .stars{display:flex;gap:6px;justify-content:center;margin:4px 0 8px}
-  .stars .star{font-size:30px;color:#3a3a40;cursor:pointer;transition:transform .1s,color .1s;line-height:1}
-  .stars .star:hover{transform:scale(1.15)}
+  .stars .star{position:relative;font-size:32px;color:#3a3a40;cursor:pointer;line-height:1;display:inline-block}
   .stars .star.on{color:#ffc83d}
+  .stars .star.half{background:linear-gradient(90deg,#ffc83d 50%,#3a3a40 50%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .stars .shalf{position:absolute;top:0;height:100%;width:50%;z-index:2}
+  .stars .shalf.left{left:0}.stars .shalf.right{right:0}
+  .stars .star:hover{transform:scale(1.12)}
   .ratehead .rateavg{color:#ffc83d;font-weight:700}
   .ratemy{text-align:center;font-size:11.5px;color:var(--muted)}
   .rateclear{color:var(--red);cursor:pointer;margin-left:4px}
@@ -305,7 +309,7 @@
   </header>
 
   <div class="lhead" id="lhead">
-    <span>피규어</span><span class="r">현재가</span><span class="r">출시대비</span><span class="c">♥</span>
+    <span>피규어</span><span class="r">현재가</span><span class="r">출시대비</span><span class="c">👍</span>
   </div>
 
   <main>
@@ -579,7 +583,7 @@ function render(){
       <div class="rprice"><div class="pv ${cls}">${p.s}</div><div class="pu">${p.u}</div></div>
       <div class="rchgbox ${cls}"><div class="rchg">${arrow}${chg.toFixed(2)}%</div><div class="rdiff">${pf.diffStr.replace('+','+').replace(pf.sym,pf.sym)}</div></div>
       <div class="rlike" onclick="event.stopPropagation()">
-        <button class="${liked.has(it.id)?'on':''}" onclick="toggleLike(${it.id},this)">${liked.has(it.id)?'❤️':'🤍'}</button>
+        <button class="thumb-btn ${liked.has(it.id)?'on':''}" onclick="toggleLike(${it.id},this)">👍</button>
         <span class="lc">${lk(it)}</span>
       </div>
     </div>`;
@@ -801,7 +805,7 @@ function detailHtml(it){
     <div class="dbigimg">${isImg?`<img src="${it.emoji}" alt="">`:`<span style="font-size:90px">${it.emoji||'🎁'}</span>`}</div>
     <div class="dtitle">${it.title} <b>${it.rank||''}</b></div>
     <div class="dseries">${it.series||''}</div>
-    <div class="dmeta">발매 ${(it.released||'').slice(0,7)||'-'} · ♥ ${it.likes+(liked.has(it.id)?1:0)} · ⭐ ${r.cnt?r.avg.toFixed(1):'-'} (${r.cnt})</div>
+    <div class="dmeta">발매 ${(it.released||'').slice(0,7)||'-'} · 👍 ${it.likes+(liked.has(it.id)?1:0)} · ⭐ ${r.cnt?r.avg.toFixed(1):'-'} (${r.cnt})</div>
     <div class="dprice"><span class="big ${cls}">${p.s}</span><span class="punit">${p.u}</span></div>
     <div class="dchgline ${cls}">${arrow}${Math.abs(chg).toFixed(2)}%
       <span class="dchgsub">${pf.diffStr} · 출시일대비</span></div>
@@ -815,8 +819,13 @@ function detailHtml(it){
     <div class="fxnote">※ JPY·USD는 한국 시세를 실시간 환율로 환산한 값이에요.</div>
     <div class="ratebox">
       <div class="ratehead"><span>평점</span><span class="rateavg">${r.cnt?'⭐ '+r.avg.toFixed(1):'아직 평가 없음'}<span class="ratecnt">${r.cnt?' · '+r.cnt+'명':''}</span></span></div>
-      <div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<span class="star ${my>=n?'on':''}" onclick="rate(${it.id},${n})">★</span>`).join('')}</div>
-      <div class="ratemy">${my?`내 평점: ${my}.0  <span class="rateclear" onclick="rate(${it.id},0)">지우기</span>`:'별을 눌러 평가해보세요'}</div>
+      <div class="stars" id="stars">${[1,2,3,4,5].map(n=>{
+        const full=my>=n, half=!full && my>=n-0.5;
+        return `<span class="star ${full?'on':half?'half':''}">
+          <span class="shalf left" onclick="rate(${it.id},${n-0.5})"></span>
+          <span class="shalf right" onclick="rate(${it.id},${n})"></span>★</span>`;
+      }).join('')}</div>
+      <div class="ratemy">${my?`내 평점: ${my.toFixed(1)}  <span class="rateclear" onclick="rate(${it.id},0)">지우기</span>`:'별을 눌러 평가해보세요 (반칸 가능)'}</div>
     </div>
     <button class="addbtn" onclick="addToShelf(${it.id})">＋ 내 장식장에 담기</button>`;
 }
