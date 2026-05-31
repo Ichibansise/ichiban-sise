@@ -66,7 +66,7 @@
   .chip.on{background:#fff;color:#0a0a0b;border-color:#fff;font-weight:700}
 
   /* LIST HEADER (업비트 컬럼헤더) */
-  .lhead{display:grid;grid-template-columns:1fr 96px 64px 52px;gap:6px;padding:9px 16px;
+  .lhead{display:grid;grid-template-columns:1fr 84px 56px 56px 40px;gap:5px;padding:9px 14px;
     font-size:11px;color:var(--muted);border-bottom:1px solid var(--line);flex-shrink:0;background:var(--bg)}
   .lhead .r{text-align:right}
   .lhead .c{text-align:center}
@@ -77,7 +77,7 @@
   .view.on{display:block}
 
   /* ROW (거래소 리스트 한 줄) */
-  .row{display:grid;grid-template-columns:1fr 96px 64px 52px;gap:6px;align-items:center;
+  .row{display:grid;grid-template-columns:1fr 84px 56px 56px 40px;gap:5px;align-items:center;
     padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
   .row:active{background:var(--panel)}
   .rname{display:flex;align-items:center;gap:9px;min-width:0}
@@ -87,11 +87,10 @@
   .rtitle .rrk{font-weight:700;color:var(--ink)}
   .rseries{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rprice{text-align:right}
-  .rprice .pv{font-family:'Bebas Neue';font-size:16px;letter-spacing:.4px;color:var(--ink)}
-  .rprice .pv.up{color:var(--up)}.rprice .pv.down{color:var(--down)}
+  .rprice .pv{font-family:'Bebas Neue';font-size:15px;letter-spacing:.3px;color:var(--ink)}
   .rprice .pu{font-size:9px;color:var(--muted)}
   .rchgbox{text-align:right}
-  .rchg{font-size:12.5px;font-weight:700;font-family:'Bebas Neue';letter-spacing:.3px}
+  .rchg{font-size:11.5px;font-weight:700;font-family:'Bebas Neue';letter-spacing:.2px}
   .rdiff{font-size:9.5px;font-family:'Bebas Neue';letter-spacing:.2px;opacity:.85;margin-top:1px}
   .rchgbox.up{color:var(--up)}.rchgbox.down{color:var(--down)}.rchgbox.flat{color:var(--muted)}
   .rlike{display:flex;flex-direction:column;align-items:center;gap:1px}
@@ -203,11 +202,11 @@
   .dmeta{color:var(--muted);font-size:11.5px;margin-top:3px}
   .dprice{display:flex;align-items:baseline;gap:8px;margin-top:16px}
   .dprice .big{font-family:'Bebas Neue';font-size:40px;letter-spacing:.5px;color:var(--ink)}
-  .dprice .big.up2{color:var(--up)}.dprice .big.down2{color:var(--down)}
   .dprice .punit{font-size:13px;color:var(--muted)}
-  .dchgline{font-size:15px;font-weight:700;margin-top:4px;color:var(--muted)}
+  .dchgwrap{display:flex;gap:18px;margin-top:6px}
+  .dchgline{font-size:15px;font-weight:700;color:var(--muted);display:flex;flex-direction:column}
   .dchgline.up2{color:var(--up)}.dchgline.down2{color:var(--down)}
-  .dchgsub{font-size:11.5px;font-weight:400;color:var(--muted);margin-left:4px}
+  .dchgtag{font-size:10.5px;font-weight:400;color:var(--muted);margin-bottom:1px}
   .chartcard{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:14px 12px 10px;margin-top:16px}
   .chartlab{font-size:11px;color:var(--muted);margin-bottom:6px}
   .chartfoot{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
@@ -258,7 +257,8 @@
 
     /* 콘텐츠 살짝 큼직하게 */
     .searchwrap input{padding:14px 16px 14px 44px;font-size:15px}
-    .row{padding:14px 28px}
+    .row{padding:14px 28px;grid-template-columns:1fr 130px 90px 90px 56px;gap:8px}
+    .lhead{grid-template-columns:1fr 130px 90px 90px 56px;gap:8px}
     .rtitle{font-size:15px}.rseries{font-size:12.5px}
     .secttl{margin:22px 28px 14px;font-size:19px}
     .mapwrap{margin:0 28px}.map{height:480px}
@@ -309,7 +309,7 @@
   </header>
 
   <div class="lhead" id="lhead">
-    <span>피규어</span><span class="r">현재가</span><span class="r">전달대비</span><span class="c">👍</span>
+    <span>피규어</span><span class="r">현재가</span><span class="r">전달</span><span class="r">출시대비</span><span class="c">👍</span>
   </div>
 
   <main>
@@ -394,6 +394,9 @@ let curKr_=(it)=>it.hist&&it.hist.length?it.hist[it.hist.length-1].p:(it.kr||0);
 function curKr(it){return curKr_(it)}
 function prevKr(it){return it.hist&&it.hist.length>1?it.hist[it.hist.length-2].p:curKr(it)}
 function firstKr(it){return it.hist&&it.hist.length?it.hist[0].p:curKr(it)} // 가장 오래된 시세(출시일쯤)
+function pctFrom(base,cur){ if(!base)return 0; return ((cur-base)/base)*100; }
+function pctPrev(it){ return pctFrom(prevKr(it), curKr(it)); }   // 전달대비
+function pctFirst(it){ return pctFrom(firstKr(it), curKr(it)); } // 출시일대비
 
 let liked=new Set();
 let owned={};
@@ -576,16 +579,18 @@ function render(){
   }
 
   document.getElementById('list').innerHTML=list.map(it=>{
-    const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
-    const cls=chg>0.005?'up':chg<-0.005?'down':'flat';
-    const sign=chg>0.005?'+':'';
+    const p=priceOf(it);
+    const cp=pctPrev(it), cf=pctFirst(it);
+    const ccls=v=>v>0.005?'up':v<-0.005?'down':'flat';
+    const csign=v=>v>0.005?'+':'';
     const rankTxt=it.rank?` ${it.rank}`:'';
     return `<div class="row" data-id="${it.id}" onclick="openDetail(${it.id})">
       <div class="rname">
         <div style="min-width:0"><div class="rtitle">${it.title}<b class="rrk">${rankTxt}</b></div><div class="rseries">${it.series||''}</div></div>
       </div>
-      <div class="rprice"><div class="pv ${cls}">${p.s}</div><div class="pu">${p.u}</div></div>
-      <div class="rchgbox ${cls}"><div class="rchg">${sign}${chg.toFixed(2)}%</div><div class="rdiff">${pf.diffStr}</div></div>
+      <div class="rprice"><div class="pv">${p.s}</div><div class="pu">${p.u}</div></div>
+      <div class="rchgbox ${ccls(cp)}"><div class="rchg">${csign(cp)}${cp.toFixed(2)}%</div></div>
+      <div class="rchgbox ${ccls(cf)}"><div class="rchg">${csign(cf)}${cf.toFixed(2)}%</div></div>
       <div class="rlike" onclick="event.stopPropagation()">
         <button class="thumb-btn ${liked.has(it.id)?'on':''}" onclick="toggleLike(${it.id},this)">👍</button>
         <span class="lc">${lk(it)}</span>
@@ -841,15 +846,18 @@ function sparkline(hist){
 }
 
 function detailHtml(it){
-  const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
-  const cls=chg>0.005?'up2':chg<-0.005?'down2':'';
-  const arrow=chg>0.005?'▲ +':chg<-0.005?'▼ ':'';
+  const p=priceOf(it);
+  const cp=pctPrev(it), cf=pctFirst(it);
+  const seg=(label,v)=>{
+    const c=v>0.005?'up2':v<-0.005?'down2':'';
+    const ar=v>0.005?'▲ +':v<-0.005?'▼ ':'';
+    return `<div class="dchgline ${c}"><span class="dchgtag">${label}</span>${ar}${Math.abs(v).toFixed(2)}%</div>`;
+  };
   const h0=it.hist[0],hN=it.hist[it.hist.length-1];
   const krw=curKr(it);
   const jpyV=Math.round(krw/fxRate.krwPerJpy), usdV=(krw/fxRate.krwPerUsd).toFixed(2);
   const isImg=/^https?:\/\//i.test(it.emoji||'');
   const period = (h0&&hN&&h0.d!==hN.d) ? `${h0.d} ~ ${hN.d}` : (hN?hN.d:'');
-  // 평점: 평균(avg)·개수(cnt)·내가 준 점수(my)
   const r=ratings[it.id]||{avg:0,cnt:0};
   const my=myRatings[it.id]||0;
   return `<button class="sheetclose" onclick="closeModal()" aria-label="닫기">✕</button>
@@ -858,9 +866,8 @@ function detailHtml(it){
     <div class="dtitle">${it.title} <b>${it.rank||''}</b></div>
     <div class="dseries">${it.series||''}</div>
     <div class="dmeta">발매 ${(it.released||'').slice(0,7)||'-'} · 👍 ${it.likes+(liked.has(it.id)?1:0)} · ⭐ ${r.cnt?r.avg.toFixed(1):'-'} (${r.cnt})</div>
-    <div class="dprice"><span class="big ${cls}">${p.s}</span><span class="punit">${p.u}</span></div>
-    <div class="dchgline ${cls}">${arrow}${Math.abs(chg).toFixed(2)}%
-      <span class="dchgsub">${pf.diffStr} · 전달대비</span></div>
+    <div class="dprice"><span class="big">${p.s}</span><span class="punit">${p.u}</span></div>
+    <div class="dchgwrap">${seg('전달대비',cp)}${seg('출시대비',cf)}</div>
     <div class="chartcard"><div class="chartlab">📈 한국 시세 추이 (KRW${period?' · '+period:''})</div>${sparkline(it.hist)}
       <div class="chartfoot"><span>${h0?h0.d+' · '+won(h0.p):''}</span><span>${hN?hN.d+' · '+won(hN.p):''}</span></div></div>
     <div class="pricebox">
