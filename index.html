@@ -324,7 +324,7 @@
     <section class="view" id="shelf">
       <div class="secttl">💎 내 장식장</div>
       <div class="summary">
-        <div class="label">총 평가금액 (현재 시세 · KRW)</div>
+        <div class="label">총 현재가치 (현재 시세 · KRW)</div>
         <div class="total" id="shelfTotal">₩0</div>
         <div class="count" id="shelfCount">보유 0종 · 0개</div>
         <div id="shelfSub"></div>
@@ -737,95 +737,42 @@ function renderShopList(){
 
 function renderShelf(){
   const ids=Object.keys(owned).filter(k=>owned[k]&&owned[k].qty>0);
-  let evalTotal=0, buyTotal=0, count=0;
-  // 요약은 KRW 기준으로 통일 (구매가도 원화로 입력받음)
+  let evalTotal=0, count=0;
   ids.forEach(id=>{const it=items.find(x=>x.id==id);if(it){
-    const o=owned[id];
-    evalTotal += curKr(it)*o.qty;
-    buyTotal  += (o.buy||0)*o.qty;
-    count += o.qty;
+    evalTotal += curKr(it)*owned[id].qty;
+    count += owned[id].qty;
   }});
-  const profit = evalTotal-buyTotal;
-  const rate = buyTotal>0 ? (profit/buyTotal*100) : 0;
-  const pcls = profit>0?'up':profit<0?'down':'flat';
-  const psign = profit>0?'+':'';
 
   document.getElementById('shelfTotal').textContent='₩'+Math.round(evalTotal).toLocaleString();
-  document.getElementById('shelfCount').innerHTML =
-    `보유 ${ids.length}종 · ${count}개 · `+
-    `<span class="shelf-rate ${pcls}">${psign}${rate.toFixed(2)}% (${psign}₩${Math.abs(Math.round(profit)).toLocaleString()})</span>`;
-
-  // 요약 카드 아래에 매수/평가 두 칸
-  document.getElementById('shelfSub').innerHTML = buyTotal>0 ? `
-    <div class="assetrow">
-      <div class="assetbox"><div class="al">매수금액</div><div class="av">₩${Math.round(buyTotal).toLocaleString()}</div></div>
-      <div class="assetbox"><div class="al">평가금액</div><div class="av ${pcls}">₩${Math.round(evalTotal).toLocaleString()}</div></div>
-    </div>` : '';
+  document.getElementById('shelfCount').textContent=`보유 ${ids.length}종 · ${count}개`;
+  document.getElementById('shelfSub').innerHTML='';
 
   if(ids.length===0){
     document.getElementById('colgrid').innerHTML=`<div class="empty"><div class="emptyico">🗄️</div><div class="emptytitle">장식장이 비어있어요</div><div class="emptydesc">시세 탭에서 마음에 드는 피규어를<br>장식장에 담아보세요</div><button class="emptybtn" onclick="document.querySelector('nav button[data-v=browse]').click()">📊 시세 보러가기</button></div>`;
     document.getElementById('savenote').style.display='none';
-    document.getElementById('shelfSub').innerHTML='';
     return;
   }
   document.getElementById('savenote').style.display='block';
   document.getElementById('colgrid').innerHTML=ids.map(id=>{
-    const it=items.find(x=>x.id==id);if(!it)return'';const o=owned[id];const q=o.qty;
+    const it=items.find(x=>x.id==id);if(!it)return'';const q=owned[id].qty;
     const isImg=/^https?:\/\//i.test(it.emoji||'');
     const ce=isImg?`<div class="ceimg"><img src="${it.emoji}" alt=""></div>`:`<div class="ce">${it.emoji||'🎁'}</div>`;
-    const curVal=curKr(it)*q, buyVal=(o.buy||0)*q;
-    const diff=curVal-buyVal, rt=buyVal>0?(diff/buyVal*100):0;
-    const dc=diff>0?'up':diff<0?'down':'flat', ds=diff>0?'+':'';
-    const profitLine = buyVal>0
-      ? `<div class="cprofit ${dc}">${ds}${rt.toFixed(1)}% (${ds}₩${Math.abs(Math.round(diff)).toLocaleString()})</div>` : '';
+    const curVal=curKr(it)*q;
     return `<div class="ccard">${ce}<div class="ct">${it.title} <b>${it.rank||''}</b></div>
-      <div class="cvrow"><span class="cvk">평가</span><span class="cvv">₩${Math.round(curVal).toLocaleString()}</span></div>
-      <div class="cvrow"><span class="cvk">매수</span><span class="cvv cvmuted">₩${Math.round(buyVal).toLocaleString()}</span></div>
-      ${profitLine}
-      <div class="qbtn"><button class="editbuy" onclick="editBuy(${id})">구매가 ✎</button><span class="grp"><button onclick="setQty(${id},-1)">−</button><span class="n">${q}</span><button onclick="setQty(${id},1)">＋</button></span></div></div>`;
+      <div class="cvrow"><span class="cvk">현재가치</span><span class="cvv">₩${Math.round(curVal).toLocaleString()}</span></div>
+      <div class="qbtn"><span class="cvk" style="font-size:11px">보유 ${q}개</span><span class="grp"><button onclick="setQty(${id},-1)">−</button><span class="n">${q}</span><button onclick="setQty(${id},1)">＋</button></span></div></div>`;
   }).join('');
 }
 function setQty(id,d){
-  if(!owned[id])owned[id]={qty:0,buy:0};
-  const o=owned[id];
-  if(d>0){
-    // 하나 더 추가 → 이번 구매가 묻고 평단가 갱신
-    const it=items.find(x=>x.id==id);
-    const v=prompt('이번에 산 구매가(1개당, 원)를 입력하세요.\n모르면 비워두고 확인을 눌러도 돼요.', (it?curKr(it):'')||'');
-    const n=parseInt(String(v||'').replace(/[^0-9]/g,''))||0;
-    if(n>0){
-      const prevTotal=(o.buy||0)*o.qty;
-      o.buy=Math.round((prevTotal+n)/(o.qty+1));
-    }
-    o.qty+=1;
-  }else{
-    // 빼기 → 수량만 감소 (평단가 유지)
-    o.qty=Math.max(0,o.qty-1);
-  }
-  if(o.qty===0)delete owned[id];
+  if(!owned[id])owned[id]={qty:0};
+  owned[id].qty=Math.max(0,owned[id].qty+d);
+  if(owned[id].qty===0)delete owned[id];
   saveLocal();
   renderShelf();
 }
-function editBuy(id){
-  const o=owned[id]; if(!o)return;
-  const v=prompt('이 피규어의 1개당 구매가를 입력하세요 (원)', o.buy||'');
-  if(v===null)return;
-  const n=parseInt(String(v).replace(/[^0-9]/g,''))||0;
-  o.buy=n; saveLocal(); renderShelf();
-}
 function addToShelf(id){
-  const it=items.find(x=>x.id==id);
-  if(!owned[id])owned[id]={qty:0,buy:0};
-  const o=owned[id];
-  // 담을 때마다 이번 구매가를 물어봄 (현재 시세를 기본값 제안)
-  const v=prompt('이번에 산 구매가(1개당, 원)를 입력하세요.\n모르면 비워두고 확인을 눌러도 돼요.', curKr(it)||'');
-  const n=parseInt(String(v||'').replace(/[^0-9]/g,''))||0;
-  // 평단가 계산: (기존 단가×기존수량 + 이번가격) / (기존수량+1)
-  if(n>0){
-    const prevTotal=(o.buy||0)*o.qty;
-    o.buy=Math.round((prevTotal+n)/(o.qty+1));
-  }
-  o.qty+=1;
+  if(!owned[id])owned[id]={qty:0};
+  owned[id].qty+=1;
   saveLocal();
   closeModal(); flash('내 장식장에 추가됐어요 💎');
 }
