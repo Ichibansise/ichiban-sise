@@ -120,6 +120,14 @@
   .summary .label{font-size:11px;color:var(--muted);letter-spacing:2px}
   .summary .total{font-family:'Bebas Neue';font-size:44px;color:#fff;margin-top:4px;line-height:1.1}
   .summary .count{font-size:12px;color:var(--muted);margin-top:6px}
+  .shelf-rate{font-weight:700;font-family:'Bebas Neue';font-size:13px;letter-spacing:.3px}
+  .shelf-rate.up{color:var(--up)}.shelf-rate.down{color:var(--down)}.shelf-rate.flat{color:var(--muted)}
+  #shelfSub{margin-top:16px}
+  .assetrow{display:flex;gap:10px}
+  .assetbox{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:11px 12px;text-align:left}
+  .assetbox .al{font-size:10.5px;color:var(--muted)}
+  .assetbox .av{font-family:'Bebas Neue';font-size:19px;margin-top:3px;letter-spacing:.4px}
+  .assetbox .av.up{color:var(--up)}.assetbox .av.down{color:var(--down)}
   .savenote{margin:16px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);
     border-radius:11px;font-size:11.5px;color:var(--muted);line-height:1.6}
   .colgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:14px 16px 0}
@@ -134,8 +142,13 @@
   .ccard .ceimg img{width:100%;height:100%;object-fit:cover}
   .ccard .ct{font-size:12.5px;font-weight:500;margin-top:6px}
   .ccard .ct b{color:var(--red)}
-  .ccard .cv{font-size:11px;color:var(--muted);margin-top:3px}
-  .ccard .cv b{color:#fff}
+  .ccard .cvrow{display:flex;justify-content:space-between;font-size:11.5px;margin-top:4px}
+  .ccard .cvk{color:var(--muted)}
+  .ccard .cvv{font-family:'Bebas Neue';font-size:14px;letter-spacing:.3px}
+  .ccard .cvv.cvmuted{color:var(--muted)}
+  .ccard .cprofit{font-size:11.5px;font-weight:700;font-family:'Bebas Neue';margin-top:5px;text-align:right;letter-spacing:.3px}
+  .ccard .cprofit.up{color:var(--up)}.ccard .cprofit.down{color:var(--down)}.ccard .cprofit.flat{color:var(--muted)}
+  .qbtn .editbuy{width:auto;padding:0 9px;height:24px;font-size:11px;color:var(--muted);font-family:'Noto Sans KR'}
   .qbtn{display:flex;justify-content:space-between;align-items:center;margin-top:9px}
   .qbtn span.l{font-size:11px;color:var(--muted)}
   .qbtn .grp{display:flex;gap:7px;align-items:center}
@@ -297,9 +310,10 @@
     <section class="view" id="shelf">
       <div class="secttl">💎 내 장식장</div>
       <div class="summary">
-        <div class="label">예상 총 자산 (현재 통화 기준)</div>
-        <div class="total" id="shelfTotal">0</div>
+        <div class="label">총 평가금액 (현재 시세 · KRW)</div>
+        <div class="total" id="shelfTotal">₩0</div>
         <div class="count" id="shelfCount">보유 0종 · 0개</div>
+        <div id="shelfSub"></div>
       </div>
       <div class="colgrid" id="colgrid"></div>
       <div class="savenote" id="savenote">📱 장식장은 이 기기에만 저장돼요. 브라우저의 쿠키·캐시를 삭제하거나 다른 기기로 접속하면 기록이 초기화돼요.</div>
@@ -389,7 +403,15 @@ function saveLocal(){
 function loadLocal(){
   try{
     const l=localStorage.getItem(LS_LIKES); if(l)liked=new Set(JSON.parse(l));
-    const o=localStorage.getItem(LS_OWNED); if(o)owned=JSON.parse(o);
+    const o=localStorage.getItem(LS_OWNED); if(o){
+      const raw=JSON.parse(o);
+      owned={};
+      for(const k in raw){
+        // 구버전(숫자=수량) 호환 → 객체형 {qty, buy}
+        if(typeof raw[k]==='number') owned[k]={qty:raw[k], buy:0};
+        else owned[k]=raw[k];
+      }
+    }
   }catch(e){/* 무시 */}
 }
 
@@ -623,34 +645,79 @@ function renderShopList(){
 }
 
 function renderShelf(){
-  const ids=Object.keys(owned).filter(k=>owned[k]>0);
-  let total=0,count=0,unit="₩";
-  ids.forEach(id=>{const it=items.find(x=>x.id==id);if(it){const p=priceOf(it);total+=p.v*owned[id];count+=owned[id];unit=p.s[0]}});
-  document.getElementById('shelfTotal').textContent=unit+Math.round(total).toLocaleString();
-  document.getElementById('shelfCount').textContent=`보유 ${ids.length}종 · ${count}개`;
+  const ids=Object.keys(owned).filter(k=>owned[k]&&owned[k].qty>0);
+  let evalTotal=0, buyTotal=0, count=0;
+  // 요약은 KRW 기준으로 통일 (구매가도 원화로 입력받음)
+  ids.forEach(id=>{const it=items.find(x=>x.id==id);if(it){
+    const o=owned[id];
+    evalTotal += curKr(it)*o.qty;
+    buyTotal  += (o.buy||0)*o.qty;
+    count += o.qty;
+  }});
+  const profit = evalTotal-buyTotal;
+  const rate = buyTotal>0 ? (profit/buyTotal*100) : 0;
+  const pcls = profit>0?'up':profit<0?'down':'flat';
+  const psign = profit>0?'+':'';
+
+  document.getElementById('shelfTotal').textContent='₩'+Math.round(evalTotal).toLocaleString();
+  document.getElementById('shelfCount').innerHTML =
+    `보유 ${ids.length}종 · ${count}개 · `+
+    `<span class="shelf-rate ${pcls}">${psign}${rate.toFixed(2)}% (${psign}₩${Math.abs(Math.round(profit)).toLocaleString()})</span>`;
+
+  // 요약 카드 아래에 매수/평가 두 칸
+  document.getElementById('shelfSub').innerHTML = buyTotal>0 ? `
+    <div class="assetrow">
+      <div class="assetbox"><div class="al">매수금액</div><div class="av">₩${Math.round(buyTotal).toLocaleString()}</div></div>
+      <div class="assetbox"><div class="al">평가금액</div><div class="av ${pcls}">₩${Math.round(evalTotal).toLocaleString()}</div></div>
+    </div>` : '';
+
   if(ids.length===0){
     document.getElementById('colgrid').innerHTML=`<div class="empty"><div class="emptyico">🗄️</div><div class="emptytitle">장식장이 비어있어요</div><div class="emptydesc">시세 탭에서 마음에 드는 피규어를<br>장식장에 담아보세요</div><button class="emptybtn" onclick="document.querySelector('nav button[data-v=browse]').click()">📊 시세 보러가기</button></div>`;
     document.getElementById('savenote').style.display='none';
+    document.getElementById('shelfSub').innerHTML='';
     return;
   }
   document.getElementById('savenote').style.display='block';
   document.getElementById('colgrid').innerHTML=ids.map(id=>{
-    const it=items.find(x=>x.id==id);if(!it)return'';const q=owned[id];const p=priceOf(it);
+    const it=items.find(x=>x.id==id);if(!it)return'';const o=owned[id];const q=o.qty;
     const isImg=/^https?:\/\//i.test(it.emoji||'');
     const ce=isImg?`<div class="ceimg"><img src="${it.emoji}" alt=""></div>`:`<div class="ce">${it.emoji||'🎁'}</div>`;
+    const curVal=curKr(it)*q, buyVal=(o.buy||0)*q;
+    const diff=curVal-buyVal, rt=buyVal>0?(diff/buyVal*100):0;
+    const dc=diff>0?'up':diff<0?'down':'flat', ds=diff>0?'+':'';
+    const profitLine = buyVal>0
+      ? `<div class="cprofit ${dc}">${ds}${rt.toFixed(1)}% (${ds}₩${Math.abs(Math.round(diff)).toLocaleString()})</div>` : '';
     return `<div class="ccard">${ce}<div class="ct">${it.title} <b>${it.rank||''}</b></div>
-      <div class="cv">${p.s} × ${q} = <b>${p.s[0]}${Math.round(p.v*q).toLocaleString()}</b></div>
-      <div class="qbtn"><span class="l">보유</span><span class="grp"><button onclick="setQty(${id},-1)">−</button><span class="n">${q}</span><button onclick="setQty(${id},1)">＋</button></span></div></div>`;
+      <div class="cvrow"><span class="cvk">평가</span><span class="cvv">₩${Math.round(curVal).toLocaleString()}</span></div>
+      <div class="cvrow"><span class="cvk">매수</span><span class="cvv cvmuted">₩${Math.round(buyVal).toLocaleString()}</span></div>
+      ${profitLine}
+      <div class="qbtn"><button class="editbuy" onclick="editBuy(${id})">구매가 ✎</button><span class="grp"><button onclick="setQty(${id},-1)">−</button><span class="n">${q}</span><button onclick="setQty(${id},1)">＋</button></span></div></div>`;
   }).join('');
 }
 function setQty(id,d){
-  const q=Math.max(0,(owned[id]||0)+d);
-  if(q===0)delete owned[id];else owned[id]=q;
+  if(!owned[id])owned[id]={qty:0,buy:0};
+  const q=Math.max(0,owned[id].qty+d);
+  if(q===0)delete owned[id];else owned[id].qty=q;
   saveLocal();
   renderShelf();
 }
+function editBuy(id){
+  const o=owned[id]; if(!o)return;
+  const v=prompt('이 피규어의 1개당 구매가를 입력하세요 (원)', o.buy||'');
+  if(v===null)return;
+  const n=parseInt(String(v).replace(/[^0-9]/g,''))||0;
+  o.buy=n; saveLocal(); renderShelf();
+}
 function addToShelf(id){
-  owned[id]=(owned[id]||0)+1;
+  const it=items.find(x=>x.id==id);
+  if(!owned[id])owned[id]={qty:0,buy:0};
+  // 처음 담을 때만 구매가 물어봄 (현재 시세를 기본값으로 제안)
+  if(owned[id].qty===0){
+    const v=prompt('구매가(1개당, 원)를 입력하세요.\n모르면 비워두고 확인을 눌러도 돼요.', curKr(it)||'');
+    const n=parseInt(String(v||'').replace(/[^0-9]/g,''))||0;
+    owned[id].buy=n;
+  }
+  owned[id].qty+=1;
   saveLocal();
   closeModal(); flash('내 장식장에 추가됐어요 💎');
 }
