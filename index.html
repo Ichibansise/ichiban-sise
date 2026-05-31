@@ -57,6 +57,7 @@
   .sortsel button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11.5px;
     padding:7px 11px;border-radius:8px;cursor:pointer;font-family:'Noto Sans KR';white-space:nowrap}
   .sortsel button.on{color:var(--ink);border-color:var(--muted)}
+  .sortsel .arr{font-size:9px;opacity:.4;margin-left:1px}
 
   .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:11px;scrollbar-width:none}
   .chips::-webkit-scrollbar{display:none}
@@ -170,9 +171,13 @@
   /* MODAL */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;z-index:50;max-width:430px;margin:0 auto}
   .modal.on{display:flex}
-  .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;animation:slideup .28s;transition:transform .25s ease}
+  .sheet{background:var(--panel);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 28px;border:1px solid var(--line);max-height:90dvh;overflow-y:auto;animation:slideup .28s;transition:transform .25s ease;position:relative}
   @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
   .grabzone{padding:10px 0 8px;margin:-8px -18px 6px;cursor:grab;touch-action:none}
+  .sheetclose{display:none;position:absolute;top:12px;right:14px;width:34px;height:34px;border-radius:50%;
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:16px;cursor:pointer;
+    align-items:center;justify-content:center;z-index:5}
+  .sheetclose:hover{background:var(--line)}
   .grab{width:38px;height:4px;background:var(--line);border-radius:2px;margin:0 auto}
   .sheet.dragging{animation:none;transition:none}
   .dbigimg{width:100%;aspect-ratio:1.3;border-radius:16px;background:var(--panel2);border:1px solid var(--line);
@@ -201,24 +206,16 @@
   .up2{color:var(--up)}.down2{color:var(--down)}
 
   /* ============ PC (데스크탑) 반응형 ============ */
-  @media (min-width:760px){
-    body{overflow:auto}
-    /* 앱 폭 넓히고, 좌측 사이드바 + 우측 콘텐츠 2단 레이아웃 */
-    .app{max-width:1100px;height:100dvh;display:grid;
-      grid-template-columns:230px 1fr;grid-template-rows:1fr;
-      border-left:1px solid var(--line);border-right:1px solid var(--line)}
-    /* 헤더는 콘텐츠 영역 위에 */
-    header{grid-column:2;padding:22px 28px 0}
-    .brand h1{font-size:26px}
-    .logo{width:42px;height:42px}
-    .searchwrap input{padding:14px 16px 14px 44px;font-size:15px}
-    .chips{padding-bottom:14px}
-    .chip{font-size:13.5px;padding:7px 16px}
+  @media (min-width:1000px){
+    body{overflow:hidden}
+    /* 모바일 레이아웃 유지 + 하단탭만 좌측 세로 사이드바로 */
+    .app{max-width:none;width:100vw;height:100dvh;display:grid;
+      grid-template-columns:220px 1fr;grid-template-rows:auto auto 1fr;border:none}
 
-    /* 하단 nav → 좌측 세로 사이드바 */
-    nav{position:static;grid-column:1;grid-row:1;flex-direction:column;justify-content:flex-start;
+    /* 좌측 사이드바 (기존 하단 nav) — 세 행 모두 차지 */
+    nav{position:static;grid-column:1;grid-row:1 / span 3;flex-direction:column;justify-content:flex-start;
       border-top:none;border-right:1px solid var(--line);background:var(--bg);
-      padding:24px 14px;gap:6px;backdrop-filter:none}
+      padding:22px 14px;gap:6px;backdrop-filter:none}
     nav:before{content:'이치방시세';font-family:'Black Han Sans';font-size:18px;color:var(--red);
       padding:8px 14px 20px;letter-spacing:.5px}
     nav button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;
@@ -226,42 +223,31 @@
     nav button .ni{font-size:22px}
     nav button.on{background:var(--panel2);color:var(--red)}
 
-    /* 콘텐츠 영역 */
-    .lhead{grid-column:2;padding:11px 28px;grid-template-columns:1fr 140px 120px 70px;font-size:12.5px}
-    main{grid-column:2;padding-bottom:40px}
+    /* 우측: 헤더 → 컬럼헤더 → 본문이 세로로 쌓임 (모바일과 동일 구성) */
+    header{grid-column:2;grid-row:1;padding:22px 28px 0}
+    .lhead{grid-column:2;grid-row:2;padding:11px 28px}
+    main{grid-column:2;grid-row:3;overflow-y:auto;padding-bottom:30px}
+    .brand h1{font-size:24px}.logo{width:40px;height:40px}
 
-    /* 시세 탭: 업비트식 2단 (좌 리스트 / 우 상세) */
-    #browse{height:100%}
-    .browsewrap{display:grid;grid-template-columns:minmax(420px,1fr) minmax(380px,460px);
-      gap:0;height:calc(100dvh - 200px);min-height:520px}
-    .listcol{overflow-y:auto;border-right:1px solid var(--line)}
-    .detailcol{overflow-y:auto;padding:0 24px 30px;position:relative}
-    .detailempty{display:flex;align-items:center;justify-content:center;height:100%;
-      color:var(--muted);font-size:14px;text-align:center;line-height:1.7}
-    /* 우측 인라인 상세 안의 요소들 (시트 재활용) */
-    .detailcol .grabzone{display:none}
-    .detailcol .dbigimg{margin-top:20px}
-
-    /* 리스트 큼직하게 */
-    .row{grid-template-columns:1fr 140px 120px 70px;padding:15px 24px}
-    .row.sel{background:var(--panel2)}
-    .rtitle{font-size:15px}
-    .rseries{font-size:12.5px}
-    .rprice .pv{font-size:19px}
-    .rchg{font-size:14px}.rdiff{font-size:11px}
-    .rlike button{font-size:19px}
-
-    /* 지도/장식장/관리 영역 여백 */
+    /* 콘텐츠 살짝 큼직하게 */
+    .searchwrap input{padding:14px 16px 14px 44px;font-size:15px}
+    .row{padding:14px 28px}
+    .rtitle{font-size:15px}.rseries{font-size:12.5px}
     .secttl{margin:22px 28px 14px;font-size:19px}
-    .mapwrap{margin:0 28px}.map{height:460px}
+    .mapwrap{margin:0 28px}.map{height:480px}
     .shoplist{margin:16px 28px 0}
     .summary{margin:0 28px}
     .colgrid{grid-template-columns:repeat(4,1fr);margin:16px 28px 0}
     .savenote{margin:18px 28px}
-    .ac,.note{margin-left:28px;margin-right:28px}
+    .ac,.note{margin-left:28px;margin-right:28px;max-width:560px}
 
-    /* PC에선 상세를 인라인 우측 패널에 표시하므로 모달은 사용 안 함 */
-    .modal{display:none !important}
+    /* 상세: 가운데 떠 있는 오버레이 + X 버튼으로 닫기 */
+    .modal{align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
+    .sheet{max-width:480px;width:480px;max-height:88dvh;border-radius:18px;border:1px solid var(--line);
+      animation:popin .2s;padding-top:42px}
+    @keyframes popin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+    .grabzone{display:none}
+    .sheetclose{display:flex}
   }
 </style>
 </head>
@@ -284,9 +270,9 @@
         <button data-c="us" onclick="setCurr(this)">USD</button>
       </div>
       <div class="sortsel">
-        <button class="on" data-s="likes" onclick="setSort(this)">좋아요순</button>
-        <button data-s="newest" onclick="setSort(this)">최신</button>
-        <button data-s="change" onclick="setSort(this)">변동</button>
+        <button class="on" data-s="price" onclick="setSort(this)">가격순 <span class="arr">▼</span></button>
+        <button data-s="release" onclick="setSort(this)">출시일순 <span class="arr">▼</span></button>
+        <button data-s="likes" onclick="setSort(this)">좋아요순</button>
       </div>
     </div>
     <div class="chips" id="chips"></div>
@@ -297,14 +283,7 @@
   </div>
 
   <main>
-    <section class="view on" id="browse">
-      <div class="browsewrap">
-        <div class="listcol"><div id="list"></div></div>
-        <div class="detailcol" id="detailcol">
-          <div class="detailempty">← 왼쪽에서 피규어를 선택하면<br>여기에 시세 상세가 나타나요</div>
-        </div>
-      </div>
-    </section>
+    <section class="view on" id="browse"><div id="list"></div></section>
 
     <section class="view" id="map">
       <div class="secttl">📍 굿즈샵 찾기</div>
@@ -386,7 +365,8 @@ function prevKr(it){return it.hist&&it.hist.length>1?it.hist[it.hist.length-2].p
 
 let liked=new Set();
 let owned={};
-let sortMode="likes";
+let sortMode="price";      // price | release | likes
+let sortDir={price:'desc', release:'desc'};  // 각 모드의 방향 기억
 let currency="kr";
 let activeSeries="전체";
 let series=["전체"];
@@ -491,7 +471,24 @@ function changePct(it){ // 전주 대비 (한국가 기준)
 
 /* ====== 렌더 ====== */
 function setCurr(btn){document.querySelectorAll('.curr button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');currency=btn.dataset.c;render()}
-function setSort(btn){document.querySelectorAll('.sortsel button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');sortMode=btn.dataset.s;render()}
+function setSort(btn){
+  const m=btn.dataset.s;
+  if(sortMode===m && m!=='likes'){
+    // 같은 정렬 다시 누르면 방향 토글
+    sortDir[m]=sortDir[m]==='desc'?'asc':'desc';
+  }
+  sortMode=m;
+  document.querySelectorAll('.sortsel button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  // 화살표 갱신
+  document.querySelectorAll('.sortsel button').forEach(b=>{
+    const arr=b.querySelector('.arr'); if(!arr)return;
+    const dm=b.dataset.s;
+    arr.textContent = sortDir[dm]==='asc' ? '▲' : '▼';
+    arr.style.opacity = (dm===sortMode)?'1':'.4';
+  });
+  render();
+}
 function setSeries(s){activeSeries=s;renderChips();render()}
 function renderChips(){document.getElementById('chips').innerHTML=series.map(s=>`<div class="chip ${s===activeSeries?'on':''}" onclick="setSeries('${s}')">${s}</div>`).join('')}
 
@@ -512,9 +509,15 @@ function render(){
     return okS&&okQ;
   });
   const lk=it=>it.likes+(liked.has(it.id)?1:0);
-  if(sortMode==="likes")list.sort((a,b)=>lk(b)-lk(a));
-  else if(sortMode==="newest")list.sort((a,b)=>new Date(b.released)-new Date(a.released));
-  else if(sortMode==="change")list.sort((a,b)=>Math.abs(changePct(b))-Math.abs(changePct(a)));
+  if(sortMode==="price"){
+    list.sort((a,b)=> sortDir.price==='desc' ? curKr(b)-curKr(a) : curKr(a)-curKr(b));
+  }else if(sortMode==="release"){
+    list.sort((a,b)=> sortDir.release==='desc'
+      ? new Date(b.released)-new Date(a.released)
+      : new Date(a.released)-new Date(b.released));
+  }else if(sortMode==="likes"){
+    list.sort((a,b)=>lk(b)-lk(a));
+  }
 
   document.getElementById('list').innerHTML=list.map(it=>{
     const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
@@ -533,12 +536,6 @@ function render(){
       </div>
     </div>`;
   }).join('')||`<div style="text-align:center;color:var(--muted);padding:50px">검색 결과가 없어요 🥲</div>`;
-
-  // PC: 선택 항목 유지 또는 첫 항목 자동 선택
-  if(isPC() && list.length){
-    const stillThere=selectedId && list.some(x=>x.id===selectedId);
-    openDetail(stillThere?selectedId:list[0].id);
-  }
 }
 function toggleLike(id,el){
   if(liked.has(id))liked.delete(id);else liked.add(id);
@@ -651,8 +648,7 @@ function setQty(id,d){
 function addToShelf(id){
   owned[id]=(owned[id]||0)+1;
   saveLocal();
-  if(!isPC())closeModal();
-  flash('내 장식장에 추가됐어요 💎');
+  closeModal(); flash('내 장식장에 추가됐어요 💎');
 }
 
 /* ====== 차트 (주별 시세) ====== */
@@ -670,7 +666,7 @@ function sparkline(hist){
     <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4.5" fill="${col}"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="9" fill="${col}" opacity=".25"/></svg>`;
 }
 
-function detailHtml(it, forPanel){
+function detailHtml(it){
   const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
   const cls=chg>0.005?'up2':chg<-0.005?'down2':'';
   const arrow=chg>0.005?'▲ +':chg<-0.005?'▼ ':'';
@@ -678,8 +674,8 @@ function detailHtml(it, forPanel){
   const krw=curKr(it);
   const jpyV=Math.round(krw/fxRate.krwPerJpy), usdV=(krw/fxRate.krwPerUsd).toFixed(2);
   const isImg=/^https?:\/\//i.test(it.emoji||'');
-  const handle=forPanel?'':`<div class="grabzone" id="grabzone"><div class="grab"></div></div>`;
-  return `${handle}
+  return `<button class="sheetclose" onclick="closeModal()" aria-label="닫기">✕</button>
+    <div class="grabzone" id="grabzone"><div class="grab"></div></div>
     <div class="dbigimg">${isImg?`<img src="${it.emoji}" alt="">`:`<span style="font-size:90px">${it.emoji||'🎁'}</span>`}</div>
     <div class="dtitle">${it.title} <b>${it.rank||''}</b></div>
     <div class="dseries">${it.series||''}</div>
@@ -698,25 +694,14 @@ function detailHtml(it, forPanel){
     <button class="addbtn" onclick="addToShelf(${it.id})">＋ 내 장식장에 담기</button>`;
 }
 
-let selectedId_unused; // (선언 상단 이동됨)
-function isPC(){return window.matchMedia('(min-width:760px)').matches}
+function isPC(){return window.matchMedia('(min-width:1000px)').matches}
 
 function openDetail(id){
   const it=items.find(x=>x.id==id);if(!it)return;
   selectedId=id;
-  if(isPC()){
-    // PC: 우측 인라인 패널에 표시 (업비트식)
-    document.getElementById('detailcol').innerHTML=detailHtml(it,true);
-    // 리스트에서 선택 항목 하이라이트
-    document.querySelectorAll('.row').forEach(r=>r.classList.remove('sel'));
-    const row=document.querySelector(`.row[data-id="${id}"]`);
-    if(row)row.classList.add('sel');
-  }else{
-    // 모바일: 기존 바텀시트 모달
-    document.getElementById('sheet').innerHTML=detailHtml(it,false);
-    document.getElementById('modal').classList.add('on');
-    setupSheetDrag();
-  }
+  document.getElementById('sheet').innerHTML=detailHtml(it);
+  document.getElementById('modal').classList.add('on');
+  setupSheetDrag(); // PC에선 grabzone이 CSS로 숨겨져 드래그 비활성
 }
 function closeModal(){
   const sheet=document.getElementById('sheet');
@@ -817,6 +802,7 @@ function go(btn){
   document.getElementById('ctrlrow').style.display=browse?'flex':'none';
   document.getElementById('chips').style.display=browse?'flex':'none';
   document.getElementById('lhead').style.display=browse?'grid':'none';
+  if(browse)render();
   if(v==='map')renderMap();if(v==='shelf')renderShelf();if(v==='admin')renderItemSelect();
 }
 
@@ -831,6 +817,9 @@ window.addEventListener('resize',()=>{clearTimeout(_rzTimer);_rzTimer=setTimeout
   const cur=document.querySelector('nav button.on');
   if(cur&&cur.dataset.v==='browse')render();
 },200)});
+
+// 초기 가격순 화살표 활성화 표시
+(function(){const b=document.querySelector('.sortsel button[data-s="price"] .arr');if(b)b.style.opacity='1';})();
 
 loadLocal();renderChips();render();loadFx().then(()=>render());loadData();
 </script>
