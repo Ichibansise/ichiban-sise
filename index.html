@@ -180,7 +180,7 @@
   .sheetclose:hover{background:var(--line)}
   .grab{width:38px;height:4px;background:var(--line);border-radius:2px;margin:0 auto}
   .sheet.dragging{animation:none;transition:none}
-  .dbigimg{width:100%;aspect-ratio:1.3;border-radius:16px;background:var(--panel2);border:1px solid var(--line);
+  .dbigimg{width:100%;aspect-ratio:1;border-radius:16px;background:var(--panel2);border:1px solid var(--line);
     display:grid;place-items:center;overflow:hidden;margin-bottom:14px}
   .dbigimg img{width:100%;height:100%;object-fit:contain;background:#000}
   .dtitle{font-family:'Black Han Sans';font-size:22px;line-height:1.18}
@@ -241,13 +241,19 @@
     .savenote{margin:18px 28px}
     .ac,.note{margin-left:28px;margin-right:28px;max-width:560px}
 
-    /* 상세: 가운데 떠 있는 오버레이 + X 버튼으로 닫기 */
+    /* 상세: 가운데 떠 있는 가로형 오버레이 + X 버튼으로 닫기 */
     .modal{align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
-    .sheet{max-width:480px;width:480px;max-height:88dvh;border-radius:18px;border:1px solid var(--line);
-      animation:popin .2s;padding-top:42px}
+    .sheet{max-width:860px;width:860px;max-height:88dvh;border-radius:18px;border:1px solid var(--line);
+      animation:popin .2s;padding:40px 32px 32px;
+      display:grid;grid-template-columns:340px 1fr;column-gap:32px;align-items:start}
     @keyframes popin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
     .grabzone{display:none}
     .sheetclose{display:flex}
+    /* 좌측: 이미지 / 우측: 나머지 정보 전부 */
+    .sheet .dbigimg{grid-column:1;grid-row:1 / span 99;margin:0;position:sticky;top:0}
+    .sheet .dtitle,.sheet .dseries,.sheet .dmeta,.sheet .dprice,.sheet .dchgline,
+    .sheet .chartcard,.sheet .pricebox,.sheet .fxnote,.sheet .addbtn{grid-column:2}
+    .sheet .dtitle{margin-top:0}
   }
 </style>
 </head>
@@ -794,6 +800,7 @@ async function addItem(){
 }
 
 function go(btn){
+  closeModal(); // 탭 이동하면 열려있던 상세창 닫기
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   const v=btn.dataset.v;
   document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));document.getElementById(v).classList.add('on');
