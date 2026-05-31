@@ -139,7 +139,7 @@
   .emptybtn{background:var(--red);color:#fff;border:none;padding:11px 22px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR'}
   .ccard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
   .ccard .ce{font-size:30px}
-  .ccard .ceimg{width:100%;aspect-ratio:1.2;border-radius:9px;overflow:hidden;background:#000;border:1px solid var(--line)}
+  .ccard .ceimg{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;background:#000;border:1px solid var(--line)}
   .ccard .ceimg img{width:100%;height:100%;object-fit:cover}
   .ccard .ct{font-size:12.5px;font-weight:500;margin-top:6px}
   .ccard .ct b{color:var(--red)}
@@ -309,7 +309,7 @@
   </header>
 
   <div class="lhead" id="lhead">
-    <span>피규어</span><span class="r">현재가</span><span class="r">출시대비</span><span class="c">👍</span>
+    <span>피규어</span><span class="r">현재가</span><span class="r">전달대비</span><span class="c">👍</span>
   </div>
 
   <main>
@@ -511,16 +511,17 @@ function priceOf(it){
   if(currency==="jp"){const v=krw/fxRate.krwPerJpy;return {v, u:"JPY", s:"¥"+Math.round(v).toLocaleString()};}
   const v=krw/fxRate.krwPerUsd;return {v, u:"USD", s:"$"+v.toFixed(2)};
 }
-function priceFull(it){ // 출시일대비 증감액 (현재 통화로)
-  const cur=curKr(it), base=firstKr(it), diff=cur-base;
+function priceFull(it){ // 전달(직전 시세) 대비 증감액 (현재 통화로)
+  const cur=curKr(it), base=prevKr(it), diff=cur-base;
   let conv=1, sym="₩", dec=0;
   if(currency==="jp"){conv=1/fxRate.krwPerJpy;sym="¥";dec=0;}
   else if(currency==="us"){conv=1/fxRate.krwPerUsd;sym="$";dec=2;}
   const dv=diff*conv;
-  return {sym, diffStr:(dv>=0?"+":"")+sym+Math.abs(dv).toLocaleString(undefined,{maximumFractionDigits:dec})};
+  const sign = dv>0?"+":dv<0?"-":"";   // 음수도 -가 제대로 붙도록
+  return {sym, diffStr: sign+sym+Math.abs(dv).toLocaleString(undefined,{maximumFractionDigits:dec})};
 }
-function changePct(it){ // 출시일대비 (한국가 기준)
-  const a=firstKr(it),b=curKr(it);
+function changePct(it){ // 전달(직전 시세) 대비 (한국가 기준)
+  const a=prevKr(it),b=curKr(it);
   if(!a)return 0; return ((b-a)/a)*100;
 }
 
@@ -577,14 +578,14 @@ function render(){
   document.getElementById('list').innerHTML=list.map(it=>{
     const p=priceOf(it);const chg=changePct(it);const pf=priceFull(it);
     const cls=chg>0.005?'up':chg<-0.005?'down':'flat';
-    const arrow=chg>0.005?'+':chg<-0.005?'':'';
+    const sign=chg>0.005?'+':'';
     const rankTxt=it.rank?` ${it.rank}`:'';
     return `<div class="row" data-id="${it.id}" onclick="openDetail(${it.id})">
       <div class="rname">
         <div style="min-width:0"><div class="rtitle">${it.title}<b class="rrk">${rankTxt}</b></div><div class="rseries">${it.series||''}</div></div>
       </div>
       <div class="rprice"><div class="pv ${cls}">${p.s}</div><div class="pu">${p.u}</div></div>
-      <div class="rchgbox ${cls}"><div class="rchg">${arrow}${chg.toFixed(2)}%</div><div class="rdiff">${pf.diffStr.replace('+','+').replace(pf.sym,pf.sym)}</div></div>
+      <div class="rchgbox ${cls}"><div class="rchg">${sign}${chg.toFixed(2)}%</div><div class="rdiff">${pf.diffStr}</div></div>
       <div class="rlike" onclick="event.stopPropagation()">
         <button class="thumb-btn ${liked.has(it.id)?'on':''}" onclick="toggleLike(${it.id},this)">👍</button>
         <span class="lc">${lk(it)}</span>
@@ -859,7 +860,7 @@ function detailHtml(it){
     <div class="dmeta">발매 ${(it.released||'').slice(0,7)||'-'} · 👍 ${it.likes+(liked.has(it.id)?1:0)} · ⭐ ${r.cnt?r.avg.toFixed(1):'-'} (${r.cnt})</div>
     <div class="dprice"><span class="big ${cls}">${p.s}</span><span class="punit">${p.u}</span></div>
     <div class="dchgline ${cls}">${arrow}${Math.abs(chg).toFixed(2)}%
-      <span class="dchgsub">${pf.diffStr} · 출시일대비</span></div>
+      <span class="dchgsub">${pf.diffStr} · 전달대비</span></div>
     <div class="chartcard"><div class="chartlab">📈 한국 시세 추이 (KRW${period?' · '+period:''})</div>${sparkline(it.hist)}
       <div class="chartfoot"><span>${h0?h0.d+' · '+won(h0.p):''}</span><span>${hN?hN.d+' · '+won(hN.p):''}</span></div></div>
     <div class="pricebox">
